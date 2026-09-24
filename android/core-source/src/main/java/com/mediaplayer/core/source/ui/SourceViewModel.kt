@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.mediaplayer.core.source.AutoFailoverSourceManager
 import com.mediaplayer.core.source.data.SourceRepository
+import com.mediaplayer.core.source.model.ParseResult
 import com.mediaplayer.core.source.model.PushedSource
 import com.mediaplayer.core.source.model.SourceEntry
 import com.mediaplayer.core.source.model.SourceKind
@@ -164,8 +165,13 @@ class SourceViewModel(
             parsed.forEach { item ->
                 val kind = if (forcedKind != SourceKind.UNKNOWN) forcedKind
                 else SourceKind.from(null, item.url)
-                val name = if (parsed.size == 1) (forcedName ?: item.name) else item.name
-                if (repository.add(name.orEmpty(), item.url, kind) != null) added++ else skipped++
+                // 名称优先级：用户备注 > 源自己声明的名字（探测后回填）> 域名占位。
+                // 先落一个域名占位，是为了让卡片立刻有可读标题；探测成功后
+                // applyProbedMeta 会用源声明的名字把它换掉（占位值正好是识别的依据）。
+                val name = (if (parsed.size == 1) (forcedName ?: item.name) else item.name)
+                    ?.takeIf { it.isNotBlank() }
+                    ?: hostOf(item.url)
+                if (repository.add(name, item.url, kind) != null) added++ else skipped++
             }
 
             if (added == 0) {
@@ -412,13 +418,52 @@ class SourceViewModel(
             val target = if (entry.enabled) entry else entry.copy(enabled = true)
             val resolved = probeManager.resolve(SourcePool(listOf(target)))
             val elapsedMs = ((System.nanoTime() - startedAt) / 1_000_000L).toInt()
-            if (resolved != null) ProbeState.Ok(elapsedMs) else ProbeState.Failed
+            if (resolved != null) {
+                // 探测成功 → 把**内容**得出的真实类型与源自带名称回写条目。
+                // 「自动分类 / 自动命名」真正生效的地方就在这一句：
+                // 入库时只能按 URL 后缀猜，权威结论要等这里才拿到。
+                applyProbedMeta(entry, resolved.detail)
+                ProbeState.Ok(elapsedMs)
+            } else {
+                ProbeState.Failed
+            }
         } catch (e: CancellationException) {
             throw e // 协程取消必须原样抛出，否则会吞掉取消信号
         } catch (e: Exception) {
             Log.w(TAG, "probe failed for ${entry.maskedUrl}", e)
             ProbeState.Failed
         }
+    }
+
+    /**
+     * 把探测结论落到条目上 —— 自动分类与自动命名的收口处。
+     *
+     * **类型**：直接采用 [ParseResult.Ok.kind]（由内容判定：带 `storeHouse`/`urls`
+     * 即多仓、含 `#EXTM3U` 即直播），比 URL 后缀可靠得多。
+     *
+     * **名称**：优先用源自身声明的名字（`storeHouse.sourceName`、顶层 `name`）。
+     * 但**绝不覆盖用户手写的备注** —— 判断方式是：只有当当前名称看起来是自动占位
+     * （空串，或正好等于域名）时才允许替换。用户不太可能手写一个恰好等于域名的名字，
+     * 所以这个判据在实践中是安全的。
+     */
+    private suspend fun applyProbedMeta(entry: SourceEntry, detail: ParseResult.Ok) {
+        val placeholder = hostOf(entry.url)
+        val looksAutoNamed = entry.name.isBlank() || entry.name == placeholder
+        val resolvedName = if (looksAutoNamed) {
+            detail.declaredName?.trim()?.takeIf { it.isNotEmpty() } ?: entry.name
+        } else {
+            entry.name
+        }
+        if (detail.kind != entry.kind || resolvedName != entry.name) {
+            repository.refreshProbedMeta(entry.id, detail.kind, resolvedName)
+        }
+    }
+
+    /** 从 URL 提取展示用主机名，作为"用户还没起名"时的占位。 */
+    private fun hostOf(url: String): String {
+        val noScheme = url.substringAfter("://", url)
+        val host = noScheme.substringBefore('/').substringBefore('?').substringBefore('#')
+        return host.removePrefix("www.").ifBlank { url.take(24) }
     }
 
     // ------------------------------------------------------------------ 内部订阅

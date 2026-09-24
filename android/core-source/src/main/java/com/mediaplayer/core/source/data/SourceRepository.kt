@@ -176,6 +176,41 @@ class SourceRepository(
     }
 
     /** 启用 / 停用（停用的源不会进入故障转移的候选序列）。 */
+    /**
+     * 用**探测结果**修正元信息（类型与名称）。
+     *
+     * 为什么必须有它：`add()` 时类型只能按 URL 后缀猜（`.json` → 单仓、`.m3u` → 直播），
+     * 但真实类型要看**内容** —— 一个 `.json` 里带 `storeHouse` 就是多仓，
+     * 一个无后缀的地址可能是直播表。[SourceProbe] 解析出的 `ParseResult.Ok.kind`
+     * 才是权威结论，而此前没有任何地方把它写回条目，
+     * 于是"自动分类"永远停留在猜测阶段。
+     *
+     * 同理，源自身声明的名字（`storeHouse.sourceName`、顶层 `name`）也应被采纳 ——
+     * 用户批量粘贴时不该被迫逐个起名。
+     *
+     * ⚠️ 刻意**不更新 `updatedAt`**：那个字段的语义是"用户上一次编辑"，
+     * 不该被后台探测刷成"刚刚"。
+     */
+    suspend fun refreshProbedMeta(id: String, kind: SourceKind, name: String?): Boolean = mutex.withLock {
+        val index = memory.indexOfFirst { it.id == id }
+        if (index < 0) return@withLock false
+
+        val old = memory[index]
+        val newKind = if (kind == SourceKind.UNKNOWN) old.kind else kind
+        val newName = name?.trim()?.takeIf { it.isNotEmpty() } ?: old.name
+
+        // 没有实际变化就不写盘，避免批量探测时产生几十次无谓的 IO
+        if (newKind == old.kind && newName == old.name) return@withLock true
+
+        memory = memory.toMutableList().also { list ->
+            list[index] = old.copy(kind = newKind, name = newName)
+        }
+        if (!incognito) persisted = memory
+        persistLocked()
+        emit()
+        true
+    }
+
     suspend fun setEnabled(id: String, enabled: Boolean): Boolean = mutex.withLock {
         val index = memory.indexOfFirst { it.id == id }
         if (index < 0) return@withLock false
