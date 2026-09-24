@@ -370,6 +370,15 @@ class SourceViewModel(
      * 每个源一个子协程并发，但被 [probeGate] 限制在 [PROBE_CONCURRENCY] 个以内；
      * 再次调用会取消上一轮，避免用户连点导致探测任务堆积。
      */
+    /**
+     * 批量测速（仅启用项）。
+     *
+     * 全部测完后会尝试**选用延迟最低的可用源** —— 对应"优先用延迟低的"这一诉求。
+     *
+     * 为什么放在这里而不是 `checkActiveSource()`：选最快必须**先拿到全部结果**，
+     * 而 `failover.resolve()` 的语义是"按优先级逐个试、第一个成功就返回"，
+     * 天然拿不到全局最优。
+     */
     fun measureAllPings() {
         bulkMeasureJob?.cancel()
         bulkMeasureJob = scope.launch {
@@ -385,6 +394,47 @@ class SourceViewModel(
                         probes.update { it + (entry.id to result) }
                     }
                 }
+            }
+            // 走到这里说明所有子协程都已结束（结构化并发保证），结果齐全
+            autoSelectFastest()
+        }
+    }
+
+    /**
+     * 在所有"探测成功"的启用项里挑延迟最低的一个设为当前源。
+     *
+     * ⚠️ **只在两种情况下改选**：① 当前还没有源；② 当前源已探测失败。
+     * 当前源仍然可用时**一律不动** —— 否则用户手动选定的源会被后台测速
+     * 悄无声息地换掉（这类"静默改动"是本项目反复踩过的 bug 类型）。
+     *
+     * 效果即：首次配置好 → 自动用最快的；当前源挂了 → 自动换到最快的可用源。
+     */
+    private suspend fun autoSelectFastest() {
+        val snapshot = repository.snapshot.value
+        val entries = snapshot.entries.filter { it.enabled }
+        if (entries.isEmpty()) return
+
+        val probeMap = probes.value
+        val currentId = snapshot.activeId
+        val currentStillOk = currentId != null && probeMap[currentId] is ProbeState.Ok
+        if (currentStillOk) return
+
+        val best = entries
+            .mapNotNull { entry ->
+                val ok = probeMap[entry.id] as? ProbeState.Ok ?: return@mapNotNull null
+                entry to ok.pingMs
+            }
+            .minByOrNull { it.second }
+            ?: return
+
+        val (entry, pingMs) = best
+        if (currentId == entry.id) return
+
+        if (repository.setActive(entry.id)) {
+            switchNotice.value = if (currentId == null) {
+                "已选用延迟最低的「${entry.name}」（${pingMs}ms）"
+            } else {
+                "原配置不可用，已切换到延迟最低的「${entry.name}」（${pingMs}ms）"
             }
         }
     }
