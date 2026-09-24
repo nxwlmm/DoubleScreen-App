@@ -4,13 +4,23 @@ name: Build APKs
 #  双端 APK 自动构建流水线
 #
 #  触发方式：
-#    · push 到 main/master（只改 android/ 或本文件时才触发，避免文档改动也跑一遍）
+#    · push 到 main/master（只改 android/ 或本文件时才触发）
 #    · 手动触发（Actions 页面 → Build APKs → Run workflow）
 #
 #  执行顺序：
 #    ① 单元测试（core-source 的纯 JVM 测试）
 #    ② 双端打包（leanback / mobile 并行，都依赖 ① 成功）
 #    ③ 归档 APK 为 Artifact，供直接下载安装
+#
+#  ── v2 修订说明（针对首跑报错）────────────────────────────────────────────
+#  首跑报错：Failed to find package 'tools'
+#  根因：android-actions/setup-android@v3 会尝试通过 sdkmanager 安装 `tools` 包，
+#        而 `tools`（旧版 SDK Tools）在较新的 Android SDK 仓库中已被移除，
+#        该包不存在 → sdkmanager 返回非零 → 整个 job 失败。
+#  修复：彻底移除 setup-android 这一步。ubuntu-latest runner **本身就预装了
+#        Android SDK**（含 cmdline-tools / platform-tools / build-tools / 多个
+#        platform），环境变量 ANDROID_SDK_ROOT 也已设好，我们唯一需要做的
+#        只是「接受许可」，让 AGP 能自动补下缺失的 platform 组件。
 # ============================================================================
 
 on:
@@ -31,7 +41,7 @@ on:
         default: false
         type: boolean
 
-# 同一个分支连续 push 时，取消上一次未跑完的构建，避免排队堆积
+# 同一分支连续 push 时，取消上一次未跑完的构建，避免排队堆积
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
@@ -40,6 +50,8 @@ env:
   GRADLE_VERSION: '8.7'
   JAVA_VERSION: '17'
   WORKING_DIR: 'android'
+  # ubuntu-latest 预装的 SDK 位置；显式声明便于日志排查
+  ANDROID_SDK_PATH: '/usr/local/lib/android/sdk'
 
 jobs:
 
@@ -59,16 +71,37 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      # setup-gradle 会接管 ~/.gradle 的缓存与并发控制，
-      # 后续所有 gradlew 调用自动复用这份缓存（首次冷启动约 3~5 分钟，之后约 40 秒）
+      # setup-gradle 接管 ~/.gradle 的缓存与并发控制，
+      # 后续所有 gradlew 调用自动复用（首次冷启动约 3~5 分钟，之后约 1~2 分钟）
       - name: 配置 Gradle 与依赖缓存
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: ${{ env.GRADLE_VERSION }}
           cache-read-only: false
 
-      - name: 配置 Android SDK
-        uses: android-actions/setup-android@v3
+      - name: 准备 Android SDK（接受许可 + 预装组件）
+        continue-on-error: true
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$ANDROID_SDK_PATH}}"
+          echo "SDK 根目录: $SDK_ROOT"
+          echo "--- 已装 platforms ---"; ls "$SDK_ROOT/platforms" 2>/dev/null || true
+          echo "--- 已装 build-tools ---"; ls "$SDK_ROOT/build-tools" 2>/dev/null || true
+
+          SDKMANAGER="$(ls "$SDK_ROOT"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::warning::未找到 sdkmanager（路径 $SDK_ROOT/cmdline-tools/*/bin），跳过；AGP 将尝试自行处理"
+            exit 0
+          fi
+          echo "sdkmanager: $SDKMANAGER"
+
+          # 接受全部 SDK 许可。yes 自动回答所有 y/N 提示；
+          # 注意 yes 被提前关闭管道时会产生 SIGPIPE 非零退出码，故必须 || true
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+
+          # 预装本项目需要的组件。已存在时 sdkmanager 会立即返回，代价极小；
+          # 不存在时避免后续 AGP 因自动下载受限而失败
+          yes | "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
+          echo "SDK 准备完成"
 
       # ⚠️ 仓库里没有 gradle-wrapper.jar（二进制文件未入库），
       # 这里按需生成一次，否则 ./gradlew 会直接报 "No such file or directory"
@@ -118,13 +151,30 @@ jobs:
           gradle-version: ${{ env.GRADLE_VERSION }}
           cache-read-only: false
 
-      - name: 配置 Android SDK
-        uses: android-actions/setup-android@v3
+      - name: 准备 Android SDK（接受许可 + 预装组件）
+        continue-on-error: true
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$ANDROID_SDK_PATH}}"
+          echo "SDK 根目录: $SDK_ROOT"
+          echo "--- 已装 platforms ---"; ls "$SDK_ROOT/platforms" 2>/dev/null || true
+          echo "--- 已装 build-tools ---"; ls "$SDK_ROOT/build-tools" 2>/dev/null || true
+
+          SDKMANAGER="$(ls "$SDK_ROOT"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::warning::未找到 sdkmanager（路径 $SDK_ROOT/cmdline-tools/*/bin），跳过；AGP 将尝试自行处理"
+            exit 0
+          fi
+          echo "sdkmanager: $SDKMANAGER"
+
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          yes | "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
+          echo "SDK 准备完成"
 
       - name: 准备 Gradle Wrapper
         working-directory: ${{ env.WORKING_DIR }}
         run: |
           if [ ! -f "./gradlew" ]; then
+            echo "未找到 gradlew，正在生成…"
             gradle wrapper --gradle-version "${GRADLE_VERSION}" --distribution-type bin
           fi
           chmod +x ./gradlew
@@ -134,7 +184,7 @@ jobs:
         run: ./gradlew :app:assembleLeanbackRelease --stacktrace --no-daemon
 
       # 产物重命名成可读名字：默认名是 app-leanback-release.apk，
-      # 下载下来三个文件长得一模一样，用户分不清哪个是电视版
+      # 下载下来几个文件长得一模一样，用户分不清哪个是电视版
       - name: 整理产物
         working-directory: ${{ env.WORKING_DIR }}
         run: |
@@ -176,13 +226,30 @@ jobs:
           gradle-version: ${{ env.GRADLE_VERSION }}
           cache-read-only: false
 
-      - name: 配置 Android SDK
-        uses: android-actions/setup-android@v3
+      - name: 准备 Android SDK（接受许可 + 预装组件）
+        continue-on-error: true
+        run: |
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$ANDROID_SDK_PATH}}"
+          echo "SDK 根目录: $SDK_ROOT"
+          echo "--- 已装 platforms ---"; ls "$SDK_ROOT/platforms" 2>/dev/null || true
+          echo "--- 已装 build-tools ---"; ls "$SDK_ROOT/build-tools" 2>/dev/null || true
+
+          SDKMANAGER="$(ls "$SDK_ROOT"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | head -1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::warning::未找到 sdkmanager（路径 $SDK_ROOT/cmdline-tools/*/bin），跳过；AGP 将尝试自行处理"
+            exit 0
+          fi
+          echo "sdkmanager: $SDKMANAGER"
+
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          yes | "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
+          echo "SDK 准备完成"
 
       - name: 准备 Gradle Wrapper
         working-directory: ${{ env.WORKING_DIR }}
         run: |
           if [ ! -f "./gradlew" ]; then
+            echo "未找到 gradlew，正在生成…"
             gradle wrapper --gradle-version "${GRADLE_VERSION}" --distribution-type bin
           fi
           chmod +x ./gradlew
@@ -231,7 +298,7 @@ jobs:
             echo ""
             echo "### 下载方式"
             echo ""
-            echo "回到本仓库页面 → 右侧 **Releases** 旁边的 **Actions** 标签 → 点进本次运行 →"
+            echo "回到本仓库页面 → **Actions** 标签 → 点进本次运行 →"
             echo "页面底部 **Artifacts** 区域，点击 \`apk-leanback-tv\` 或 \`apk-mobile-phone\` 下载。"
             echo ""
             echo "> APK 是 zip 打包的，下载后若为 .zip 请解压取出其中的 .apk 文件。"
