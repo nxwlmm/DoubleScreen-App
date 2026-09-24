@@ -60,7 +60,9 @@ object AppGraph {
     val pushServer: LocalPushServer by lazy {
         LocalPushServer(
             scope = appScope,
-            config = LocalPushServer.Config(deviceName = deviceName())
+            // 注意参数名是 initialConfig 而非 config —— LocalPushServer 内部有一个
+            // 同名的可变属性（支持运行时换主题），构造参数因此改名以避让。
+            initialConfig = LocalPushServer.Config(deviceName = deviceName())
         )
     }
 

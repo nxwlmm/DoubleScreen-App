@@ -59,7 +59,10 @@ object UiTheme {
      * @param focused 电视端传焦点状态；手机端恒传 false（触摸屏没有焦点概念）
      */
     fun cardBackground(context: Context, focused: Boolean, incognito: Boolean): Drawable {
-        val radius = dimension(context, R.dimen.card_radius)
+        // GradientDrawable.cornerRadius 是 Float，而 dimension() 返回 Int —— 这里必须 toFloat()，
+        // 否则报 "类型不匹配：推断类型为 Int，但预期为 Float"。半径提前转 Float 后，
+        // 下面 `radius + glowWidth`（Float + Int = Float）也能直接用。
+        val radius = dimension(context, R.dimen.card_radius).toFloat()
         val body = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = radius
