@@ -121,7 +121,12 @@ object SourceProbe {
                 when {
                     first == '{' || first == '[' -> scanJson(reader)
                     first == '#' -> scanLive(reader)
-                    declaredKind == SourceKind.LIVE -> scanLive(reader)
+                    // 首字符既不是 JSON 也不是 M3U 头：用「声明类型 + URL 后缀」共同判断。
+                    // .txt 直播表常常没有 #EXTM3U 头，只靠声明类型容易漏判成 JSON。
+                    declaredKind == SourceKind.LIVE ||
+                        url.endsWith(".m3u", ignoreCase = true) ||
+                        url.endsWith(".m3u8", ignoreCase = true) ||
+                        url.endsWith(".txt", ignoreCase = true) -> scanLive(reader)
                     else -> scanJson(reader)
                 }
             }

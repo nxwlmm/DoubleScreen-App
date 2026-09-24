@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <!--
+      ⚠️ 必需的空基样式：`Mobile.Xxx` 会隐式继承 `Mobile`，
+      父样式不存在时 AAPT 报 "资源 style/Mobile 未找到"。
+      （与 leanback 的 `<style name="Tv" />` 是同一个原因）
+    -->
+    <style name="Mobile" />
+
     <!-- 左滑操作按钮：等宽、居中、单行两字 -->
     <style name="Mobile.SwipeAction">
         <item name="android:layout_width">@dimen/mobile_swipe_action_width</item>

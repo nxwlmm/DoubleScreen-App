@@ -8,6 +8,15 @@
 -->
 <resources>
 
+    <!--
+      ⚠️ 必需的空基样式。
+      Android 的 `<style name="Tv.Tab">` 使用**点号隐式继承**：AAPT 会把它当作
+      父样式 `Tv` 的子样式并要求 `Tv` 真实存在。缺了这一行，资源链接阶段会直接报
+      "资源 style/Tv 未找到"（AAPT 错误，整个 flavor 打包失败）。
+      显式写 parent="..." 时不走隐式继承，所以 Theme.DoubleScreen 那种写法不需要这个。
+    -->
+    <style name="Tv" />
+
     <!-- 顶栏 Tab -->
     <style name="Tv.Tab">
         <item name="android:layout_width">wrap_content</item>

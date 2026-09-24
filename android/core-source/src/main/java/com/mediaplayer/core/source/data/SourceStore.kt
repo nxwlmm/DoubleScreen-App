@@ -118,13 +118,12 @@ class InMemoryStore(initial: String? = null) : SourceStore {
 
     override suspend fun read(): String? = mutex.withLock { content }
 
-    // ⚠️ 表达式体函数（`= mutex.withLock { ... }`）会把 lambda 最后一行的类型
-    // 当作返回值。`writeCount++` / `clearCount++` 是 Int，于是整个函数的返回类型
-    // 被推断成 Int，与接口声明的 Unit 冲突（报 "返回类型不是被覆盖成员的子类型"）。
-    // 末尾补 Unit 显式收口。
-    override suspend fun write(newContent: String) = mutex.withLock {
-        content = newContent
-        lastWritten = newContent
+    // 参数名必须与接口 `write(content: String)` 保持一致 ——
+    // 否则 Kotlin 会报 "超类型中对应的参数名为 content，用命名参数调用时可能有问题" 的警告。
+    // 类里已有同名字段，故用 this.content 显式限定。
+    override suspend fun write(content: String) = mutex.withLock {
+        this.content = content
+        lastWritten = content
         writeCount++
         Unit
     }
