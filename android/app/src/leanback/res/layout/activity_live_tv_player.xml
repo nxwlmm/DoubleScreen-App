@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 电视端直播播放页：全屏 PlayerView + 换台时的频道名提示（居中淡出） -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF000000">
+
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/player_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:resize_mode="fit"
+        app:surface_type="surface_view"
+        app:use_controller="true" />
+
+    <!-- 换台提示：遥控器上下键换台时显示频道名，2 秒后淡出 -->
+    <TextView
+        android:id="@+id/channel_toast"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="32dp"
+        android:alpha="0"
+        android:background="@drawable/bg_input"
+        android:fontFamily="monospace"
+        android:paddingStart="20dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="12dp"
+        android:textColor="@color/text_main"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        tools:text="CCTV-1 综合"
+        xmlns:tools="http://schemas.android.com/tools" />
+
+</FrameLayout>

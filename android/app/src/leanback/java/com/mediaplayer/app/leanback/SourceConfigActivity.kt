@@ -102,6 +102,14 @@ class SourceConfigActivity : AppCompatActivity() {
     private fun setupTabs() {
         binding.tabSettings.isSelected = true
         binding.tabSettings.setTextColor(ContextCompat.getColor(this, R.color.accent_standard))
+
+        // 「直播」标签是真实入口（其余 tab 是视觉占位）：电视端遥控器可聚焦、可点击。
+        // 遥控器焦点链：tabLive ← 上下键在 tabbar 与卡片列表之间移动
+        binding.tabLive.isFocusable = true
+        binding.tabLive.isClickable = true
+        binding.tabLive.setOnClickListener {
+            startActivity(android.content.Intent(this, LiveTvActivity::class.java))
+        }
     }
 
     private fun setupCardList() {

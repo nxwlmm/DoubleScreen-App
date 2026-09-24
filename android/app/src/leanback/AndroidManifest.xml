@@ -23,6 +23,17 @@
             </intent-filter>
         </activity>
 
+        <!-- 直播：列表页 + 播放页。播放页拦截遥控器上下键换台（控制栏隐藏时） -->
+        <activity
+            android:name=".leanback.LiveTvActivity"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+        <activity
+            android:name=".leanback.LiveTvPlayerActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|navigation" />
+
     </application>
 
 </manifest>

@@ -14,8 +14,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.mediaplayer.app.R
 import com.mediaplayer.app.common.AppGraph
+import com.mediaplayer.app.common.LivePlayState
 import com.mediaplayer.core.source.model.LiveChannel
-import com.mediaplayer.core.source.model.SourceEntry
 import com.mediaplayer.core.source.ui.LiveViewModel
 import kotlinx.coroutines.launch
 
@@ -164,16 +164,4 @@ class LiveActivity : AppCompatActivity() {
 
         inner class VH(view: android.view.View) : RecyclerView.ViewHolder(view)
     }
-}
-
-/**
- * 播放页的数据载体（应用进程内单例）。
- *
- * 为什么不用 Intent 传：频道列表可能上百条，Intent extra 有 1MB 左右的软上限，
- * 塞大列表是典型反模式。播放页生命周期内只读这一份快照，用完即弃。
- */
-object LivePlayState {
-    var channels: List<LiveChannel> = emptyList()
-    var currentIndex: Int = -1
-    var sourceName: String = ""
 }

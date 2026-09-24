@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  电视端频道行：聚焦态背景高亮 + 文字提亮（遥控器焦点必须一眼可辨）。
+  聚焦时左侧竖条是直播频道的常见视觉锚点。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_live_item"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="18dp"
+    android:paddingTop="14dp"
+    android:paddingEnd="18dp"
+    android:paddingBottom="14dp">
+
+    <View
+        android:id="@+id/focus_bar"
+        android:layout_width="3dp"
+        android:layout_height="22dp"
+        android:background="@color/accent_standard"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/channel_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/text_sub"
+        android:textSize="15sp"
+        tools:text="CCTV-1 综合" />
+
+    <TextView
+        android:id="@+id/channel_group"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:fontFamily="monospace"
+        android:textColor="@color/text_dim"
+        android:textSize="11.5sp"
+        tools:text="央视" />
+</LinearLayout>
