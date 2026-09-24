@@ -1,0 +1,57 @@
+[versions]
+agp = "8.5.2"
+kotlin = "1.9.24"
+coroutines = "1.8.1"
+lifecycle = "2.8.4"
+androidxCore = "1.13.1"
+appcompat = "1.7.0"
+activityKtx = "1.9.2"
+fragmentKtx = "1.8.3"
+material = "1.12.0"
+constraintlayout = "2.1.4"
+recyclerview = "1.3.2"
+zxing = "3.5.3"
+okhttp = "4.12.0"
+nanohttpd = "2.3.1"
+junit = "4.13.2"
+
+[libraries]
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+
+# 仅用于 ViewModel 基类与 viewModelScope；lifecycle-viewmodel 本身不依赖 Android framework，
+# 因此 SourceViewModel 可以在纯 JVM 单元测试里被直接实例化（不需要 Robolectric）
+androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+# repeatOnLifecycle：状态收集必须在 STARTED 之后、STOPPED 时自动取消，否则后台仍在刷新 UI
+androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+# ⚠️ 必须显式引入：appcompat 只传递 android androidx.activity:activity（Java 版），
+# 而 `by viewModels()` 是 activity-ktx 里的扩展；`by activityViewModels()` 在 fragment-ktx。
+# 缺了它们，编译期直接 Unresolved reference: viewModels。
+androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activityKtx" }
+androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragmentKtx" }
+# Material 提供 Snackbar 与 Theme.Material3。注意：这里只用其 XML/View 体系，
+# 不引入 Compose —— 低配盒子上 Compose 的运行时开销与重组边界不可控。
+material = { module = "com.google.android.material:material", version.ref = "material" }
+androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
+androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
+
+# ZXing core 是纯 Java 单 jar（约 500KB），无 Android 依赖；
+# 不引 zxing-android-embedded（它带相机 Activity，本项目只需要"把字符串画成二维码"）
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
+
+# OkHttp 4.12 是最后一个支持 minSdk 21 的稳定大版本，体积可控（约 800KB），适配低配盒子
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+# NanoHTTPD 单 jar 约 50KB，无传递依赖，是低内存设备上最省的嵌入式 HTTP 方案
+nanohttpd = { module = "org.nanohttpd:nanohttpd", version.ref = "nanohttpd" }
+
+# 测试：不引 kotlinx-coroutines-test —— 测试里的网络调用被拦截器短路，
+# 用 runBlocking + 真实时间轮询即可，省一个仅测试期的依赖
+junit = { module = "junit:junit", version.ref = "junit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

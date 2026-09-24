@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  设计令牌 · 取自 V3.1 原型。
+  这里只定义**基色**，所有带透明度的派生色（8% / 10% / 28% / 50% 等）一律在
+  UiTheme 里用 ColorUtils.setAlphaComponent 现场计算 —— 因为无痕模式换轴时
+  这些半透明值要跟着一起变，写死在 XML 里会变成两套重复常量。
+-->
+<resources>
+
+    <!-- 底色与表面：无痕模式不改动这一层 -->
+    <color name="bg_deep">#FF050608</color>
+    <color name="bg_screen">#FF08090C</color>
+    <color name="surface_card">#FF161923</color>
+    <color name="surface_card_focus">#FF232A3A</color>
+    <color name="surface_pop">#FF10131C</color>
+
+    <!-- 描边基色（白，透明度由代码给） -->
+    <color name="stroke_base">#FFFFFFFF</color>
+
+    <!-- 点缀色轴 A · 标准 = 电光青 -->
+    <color name="accent_standard">#FF00F2FE</color>
+    <color name="accent_standard_alt">#FF4FACFE</color>
+    <color name="on_accent_standard">#FF04222B</color>
+
+    <!-- 点缀色轴 B · 无痕 = 极光紫 -->
+    <color name="accent_incognito">#FFA855F7</color>
+    <color name="accent_incognito_alt">#FFC084FC</color>
+    <color name="on_accent_incognito">#FF1B0733</color>
+
+    <!-- 语义色：不随主题轴变化，三档延迟语义要恒定 -->
+    <color name="accent_mint">#FF00F59B</color>
+    <color name="accent_amber">#FFFFB020</color>
+    <color name="accent_danger">#FFFF4D6D</color>
+    <color name="accent_violet">#FF7B61FF</color>
+
+    <!-- 文字三级 -->
+    <color name="text_main">#FFFFFFFF</color>
+    <color name="text_sub">#FF8E99A8</color>
+    <color name="text_dim">#FF5A6472</color>
+
+    <!-- 透明，用于 XML 占位 -->
+    <color name="transparent">#00000000</color>
+
+</resources>

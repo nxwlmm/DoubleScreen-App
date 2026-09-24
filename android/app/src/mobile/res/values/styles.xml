@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- 左滑操作按钮：等宽、居中、单行两字 -->
+    <style name="Mobile.SwipeAction">
+        <item name="android:layout_width">@dimen/mobile_swipe_action_width</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:gravity">center</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textSize">10sp</item>
+    </style>
+
+    <!-- 新增弹窗里的类型选择项 -->
+    <style name="Mobile.KindOption">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">42dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/text_sub</item>
+        <item name="android:textSize">12.5sp</item>
+    </style>
+
+</resources>

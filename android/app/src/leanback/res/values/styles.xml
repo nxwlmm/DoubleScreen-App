@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  电视端样式。
+  注意：所有**需要跟随主题轴变色**的属性（背景、描边、文字色）都不在这里定义，
+  而是由 UiTheme 在代码里构建。原因是这些颜色在无痕模式下会整体切换，
+  写进 XML 就得维护两套资源、还要在换轴时逐个 setBackgroundResource，容易漏。
+  这里只放与主题无关的度量与静态属性。
+-->
+<resources>
+
+    <!-- 顶栏 Tab -->
+    <style name="Tv.Tab">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">2dp</item>
+        <item name="android:layout_marginEnd">2dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">7dp</item>
+        <item name="android:paddingBottom">7dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/text_dim</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- 操作条按钮：等分铺满，焦点由 TvActionBarBinder 在代码里着色 -->
+    <style name="Tv.ActionButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">38dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginStart">4dp</item>
+        <item name="android:layout_marginEnd">4dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:textColor">@color/text_sub</item>
+        <item name="android:textSize">12.5sp</item>
+    </style>
+
+    <!-- 主操作（新增配置）：不参与等分，宽度自适应 -->
+    <style name="Tv.ActionButton.Primary">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_weight">0</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:textColor">@color/on_accent_standard</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- 投源面板里的幽灵按钮 -->
+    <style name="Tv.DialogButton">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:textColor">@color/text_sub</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+</resources>

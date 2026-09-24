@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 共用尺寸。形态差异（卡片宽度、字号）在各自的 flavor 里覆盖同名资源。 -->
+<resources>
+
+    <dimen name="card_radius">20dp</dimen>
+    <dimen name="card_inner_padding">18dp</dimen>
+    <dimen name="pill_radius">99dp</dimen>
+    <dimen name="stroke_width">1dp</dimen>
+
+    <!-- 焦点视觉：这三项必须与原型一致，TV 端的替换成本极高（要重新调焦点语言） -->
+    <dimen name="focus_stroke_width">1.5dp</dimen>
+    <dimen name="focus_glow_width">3dp</dimen>
+    <dimen name="focus_glow_radius_extra">3dp</dimen>
+
+    <dimen name="space_xs">4dp</dimen>
+    <dimen name="space_sm">8dp</dimen>
+    <dimen name="space_md">12dp</dimen>
+    <dimen name="space_lg">18dp</dimen>
+    <dimen name="space_xl">26dp</dimen>
+
+    <dimen name="text_page_title">21sp</dimen>
+    <dimen name="text_card_title">16sp</dimen>
+    <dimen name="text_body">13sp</dimen>
+    <dimen name="text_meta">11sp</dimen>
+    <dimen name="text_mono">10.5sp</dimen>
+
+</resources>

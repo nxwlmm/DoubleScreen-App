@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  手机端列表项。
+  结构：FrameLayout 根 + 底层操作区（右对齐、固定宽）+ 上层内容卡（可左移露出操作区）。
+  操作区放在底层、内容卡在上层，是"左滑露出"最省事的实现：
+  内容卡右移复位就完全盖住操作区，不需要额外做可见性切换。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="11dp">
+
+    <!-- ============ 底层：左滑操作区 ============ -->
+    <LinearLayout
+        android:id="@+id/action_zone"
+        android:layout_width="@dimen/mobile_swipe_reveal"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/action_use"
+            style="@style/Mobile.SwipeAction"
+            android:background="@drawable/bg_swipe_use"
+            android:text="@string/action_use"
+            android:textColor="@color/accent_mint" />
+
+        <TextView
+            android:id="@+id/action_measure"
+            style="@style/Mobile.SwipeAction"
+            android:layout_marginStart="@dimen/mobile_swipe_gap"
+            android:background="@drawable/bg_swipe_measure"
+            android:text="@string/action_update"
+            android:textColor="@color/accent_standard_alt" />
+
+        <TextView
+            android:id="@+id/action_delete"
+            style="@style/Mobile.SwipeAction"
+            android:layout_marginStart="@dimen/mobile_swipe_gap"
+            android:background="@drawable/bg_swipe_delete"
+            android:text="@string/action_delete"
+            android:textColor="@color/accent_danger" />
+    </LinearLayout>
+
+    <!-- ============ 上层：内容卡 ============ -->
+    <LinearLayout
+        android:id="@+id/card_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="@dimen/mobile_card_padding">
+
+        <!-- 类型图标 -->
+        <FrameLayout
+            android:id="@+id/tile"
+            android:layout_width="@dimen/mobile_tile_size"
+            android:layout_height="@dimen/mobile_tile_size">
+
+            <ImageView
+                android:id="@+id/tile_icon"
+                android:layout_width="21dp"
+                android:layout_height="21dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_md"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <!-- 名称 + 当前标记 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/name_text"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/text_main"
+                    android:textSize="@dimen/text_card_title"
+                    android:textStyle="bold"
+                    tools:text="我的直播源" />
+
+                <TextView
+                    android:id="@+id/current_badge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="7dp"
+                    android:fontFamily="monospace"
+                    android:includeFontPadding="false"
+                    android:paddingStart="6dp"
+                    android:paddingTop="1dp"
+                    android:paddingEnd="6dp"
+                    android:paddingBottom="1dp"
+                    android:text="@string/status_current"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+            </LinearLayout>
+
+            <!-- 状态 · 延迟 · 时间（单行，绝不换行） -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/status_pill"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:includeFontPadding="false"
+                    android:paddingStart="10dp"
+                    android:paddingTop="3dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="3dp"
+                    android:textSize="@dimen/text_mono"
+                    tools:text="可用" />
+
+                <TextView
+                    android:id="@+id/ping_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:fontFamily="monospace"
+                    android:includeFontPadding="false"
+                    android:paddingStart="8dp"
+                    android:paddingTop="3dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="3dp"
+                    android:textSize="@dimen/text_mono"
+                    tools:text="38ms" />
+
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/updated_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="monospace"
+                    android:maxLines="1"
+                    android:textColor="@color/text_dim"
+                    android:textSize="@dimen/text_mono"
+                    tools:text="今天 12:30" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/url_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:ellipsize="middle"
+                android:fontFamily="monospace"
+                android:maxLines="1"
+                android:textColor="@color/text_dim"
+                android:textSize="@dimen/text_mono"
+                tools:text="https://example.com/live.m3u" />
+        </LinearLayout>
+    </LinearLayout>
+
+</FrameLayout>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 护目镜 · 无痕模式开关图标 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.9"
+        android:strokeLineJoin="round"
+        android:pathData="M6,8.6 L18,8.6 A3.4,3.4 0 0 1 21.4,12 A3.4,3.4 0 0 1 18,15.4 L6,15.4 A3.4,3.4 0 0 1 2.6,12 A3.4,3.4 0 0 1 6,8.6 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M8,10.3 A1.7,1.7 0 1 0 8,13.7 A1.7,1.7 0 1 0 8,10.3 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M16,10.3 A1.7,1.7 0 1 0 16,13.7 A1.7,1.7 0 1 0 16,10.3 Z" />
+</vector>

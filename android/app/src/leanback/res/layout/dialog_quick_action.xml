@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 遥控器菜单键呼出的操作微面板。按钮背景由 UiTheme 按主题轴构建 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="380dp"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_dialog"
+    android:orientation="vertical"
+    android:padding="22dp">
+
+    <TextView
+        android:id="@+id/panel_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/text_main"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        tools:text="对「我的直播源」" />
+
+    <TextView
+        android:id="@+id/panel_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/quick_panel_hint"
+        android:textColor="@color/text_dim"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/action_activate"
+        style="@style/Tv.DialogButton"
+        android:layout_width="match_parent"
+        android:layout_marginTop="18dp"
+        android:text="@string/action_use" />
+
+    <TextView
+        android:id="@+id/action_measure"
+        style="@style/Tv.DialogButton"
+        android:layout_width="match_parent"
+        android:layout_marginTop="8dp"
+        android:text="@string/action_update" />
+
+    <TextView
+        android:id="@+id/action_delete"
+        style="@style/Tv.DialogButton"
+        android:layout_width="match_parent"
+        android:layout_marginTop="8dp"
+        android:text="@string/action_delete" />
+
+</LinearLayout>

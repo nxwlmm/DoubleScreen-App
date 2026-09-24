@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  电视端主界面 · 源配置管理。
+  布局是"一行到底"的竖向线性结构：
+  顶栏 → 标题行 → 提示 → 卡片轨道（占满剩余空间）→ 操作条。
+  电视端不用 ConstraintLayout 是因为这个结构本身就是严格线性且不会变，
+  约束布局在这里只会增加一层不必要的测量开销。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_deep"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/tv_screen_padding_h"
+    android:paddingTop="@dimen/tv_screen_padding_v"
+    android:paddingEnd="@dimen/tv_screen_padding_h"
+    android:paddingBottom="@dimen/tv_screen_padding_v">
+
+    <!-- ================= 顶栏 ================= -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/tv_top_bar_height"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/brand_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_check" />
+
+        <TextView
+            android:id="@+id/brand_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="9dp"
+            android:layout_marginEnd="24dp"
+            android:text="@string/app_name"
+            android:textColor="@color/text_main"
+            android:textSize="@dimen/text_card_title"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tab_home"
+            style="@style/Tv.Tab"
+            android:text="@string/tab_home" />
+
+        <TextView
+            android:id="@+id/tab_movie"
+            style="@style/Tv.Tab"
+            android:text="@string/tab_movie" />
+
+        <TextView
+            android:id="@+id/tab_live"
+            style="@style/Tv.Tab"
+            android:text="@string/tab_live" />
+
+        <TextView
+            android:id="@+id/tab_favorite"
+            style="@style/Tv.Tab"
+            android:text="@string/tab_favorite" />
+
+        <TextView
+            android:id="@+id/tab_settings"
+            style="@style/Tv.Tab"
+            android:text="@string/tab_settings" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <!-- 无痕状态指示（可点击切换，背景由 UiTheme 按主题轴构建） -->
+        <LinearLayout
+            android:id="@+id/tv_incognito"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:clickable="true"
+            android:focusable="false"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
+
+            <ImageView
+                android:id="@+id/incognito_icon"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:contentDescription="@string/a11y_incognito_toggle"
+                android:src="@drawable/ic_goggles" />
+
+            <TextView
+                android:id="@+id/incognito_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="7dp"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.06"
+                android:text="@string/incognito_standard_mode"
+                android:textColor="@color/text_dim"
+                android:textSize="@dimen/text_mono" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ================= 标题行 ================= -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_xl"
+        android:gravity="bottom"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/page_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/source_config_title"
+            android:textColor="@color/text_main"
+            android:textSize="@dimen/text_page_title"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/count_chip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:fontFamily="monospace"
+            android:paddingStart="11dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="11dp"
+            android:paddingBottom="2dp"
+            android:textSize="@dimen/text_mono"
+            tools:text="3 个配置" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <!-- 超过一屏容量时才出现，对应原型的 4 / 7 -->
+        <TextView
+            android:id="@+id/position_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:letterSpacing="0.1"
+            android:textColor="@color/text_dim"
+            android:textSize="@dimen/text_mono"
+            android:visibility="gone"
+            tools:text="1 / 7"
+            tools:visibility="visible" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/sub_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:text="@string/tv_hint"
+        android:textColor="@color/text_dim"
+        android:textSize="12sp" />
+
+    <!-- ================= 卡片轨道 ================= -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/space_md"
+        android:layout_weight="1"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/card_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="horizontal"
+            android:overScrollMode="never"
+            android:paddingStart="@dimen/tv_card_glow_padding"
+            android:paddingTop="@dimen/space_lg"
+            android:paddingEnd="@dimen/tv_card_glow_padding"
+            android:paddingBottom="@dimen/space_lg"
+            tools:itemCount="3"
+            tools:listitem="@layout/item_source_card" />
+
+        <!-- 空状态：无配置时接管整个卡片区 -->
+        <LinearLayout
+            android:id="@+id/empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <FrameLayout
+                android:layout_width="78dp"
+                android:layout_height="78dp"
+                android:background="@drawable/bg_empty_art">
+
+                <ImageView
+                    android:id="@+id/empty_icon"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_source_single" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/empty_title"
+                android:textColor="@color/text_main"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:lineSpacingExtra="4dp"
+                android:text="@string/empty_hint_tv"
+                android:textColor="@color/text_dim"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- ================= 焦点悬浮操作条 ================= -->
+    <LinearLayout
+        android:id="@+id/action_bar"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/tv_action_bar_height"
+        android:background="@drawable/bg_action_bar"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp">
+
+        <TextView
+            android:id="@+id/action_target"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="6dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:maxWidth="190dp"
+            android:textColor="@color/text_sub"
+            android:textSize="12sp"
+            tools:text="对「我的直播源」" />
+
+        <TextView
+            android:id="@+id/btn_use"
+            style="@style/Tv.ActionButton"
+            android:text="@string/action_use" />
+
+        <TextView
+            android:id="@+id/btn_update"
+            style="@style/Tv.ActionButton"
+            android:text="@string/action_update" />
+
+        <TextView
+            android:id="@+id/btn_delete"
+            style="@style/Tv.ActionButton"
+            android:text="@string/action_delete"
+            android:textColor="@color/accent_danger" />
+
+        <TextView
+            android:id="@+id/btn_add"
+            style="@style/Tv.ActionButton.Primary"
+            android:text="@string/action_add" />
+
+        <TextView
+            android:id="@+id/action_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:fontFamily="monospace"
+            android:text="@string/tv_action_hint"
+            android:textColor="@color/text_dim"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+</LinearLayout>

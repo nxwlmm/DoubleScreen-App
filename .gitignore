@@ -1,0 +1,43 @@
+# Gradle
+.gradle/
+build/
+*/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# 本地环境
+local.properties
+
+# IDE
+*.iml
+.idea/
+.vscode/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# ------------------------------------------------------------
+# 产物：APK / AAB 不入库。
+# 每次构建的产物由 GitHub Actions 以 Artifact 形式提供，
+# 提交进仓库只会让仓库体积膨胀且产生无意义的 diff。
+# ------------------------------------------------------------
+*.apk
+*.aab
+*.ap_
+release/
+outputs/
+
+# 签名文件：绝对不能入库
+*.jks
+*.keystore
+!debug.keystore
+keystore.properties
+
+# ------------------------------------------------------------
+# WorkBuddy 工作记忆：含项目决策过程与业务上下文，属内部资料，
+# 不随代码进入公开仓库
+# ------------------------------------------------------------
+.workbuddy/

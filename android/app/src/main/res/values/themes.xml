@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      窗口背景设为主题级常量：Activity 之间切换时不会闪白，
+      这一点在 OLED 电视上尤其明显（白闪一次整块屏都亮）。
+    -->
+    <style name="Theme.DoubleScreen" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">@color/bg_deep</item>
+        <item name="android:colorBackground">@color/bg_deep</item>
+        <item name="colorPrimary">@color/accent_standard</item>
+        <item name="colorOnPrimary">@color/on_accent_standard</item>
+        <item name="colorSecondary">@color/accent_standard_alt</item>
+        <item name="colorSurface">@color/surface_card</item>
+        <item name="colorOnSurface">@color/text_main</item>
+        <item name="android:textColorPrimary">@color/text_main</item>
+        <item name="android:textColorSecondary">@color/text_sub</item>
+        <item name="android:textColorHint">@color/text_dim</item>
+        <item name="android:statusBarColor">@color/bg_deep</item>
+        <item name="android:navigationBarColor">@color/bg_deep</item>
+        <!-- 电视端不显示系统 ActionBar；手机端同样用自定义顶栏 -->
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
+</resources>

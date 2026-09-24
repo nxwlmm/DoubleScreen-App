@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+
+        <!--
+          电视端入口。
+          - LEANBACK_LAUNCHER：让本 Activity 出现在 Android TV 的首页，而不是普通应用列表
+          - screenOrientation=landscape：电视永远横屏，避免系统做无谓的重建
+          - configChanges 覆盖 keyboard/navigation：部分盒子的遥控器插拔会触发配置变更，
+            不拦截的话用户按一下遥控就"回到初始页面"了
+        -->
+        <activity
+            android:name=".leanback.SourceConfigActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|uiMode"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>

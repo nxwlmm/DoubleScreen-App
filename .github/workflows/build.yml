@@ -1,0 +1,238 @@
+name: Build APKs
+
+# ============================================================================
+#  双端 APK 自动构建流水线
+#
+#  触发方式：
+#    · push 到 main/master（只改 android/ 或本文件时才触发，避免文档改动也跑一遍）
+#    · 手动触发（Actions 页面 → Build APKs → Run workflow）
+#
+#  执行顺序：
+#    ① 单元测试（core-source 的纯 JVM 测试）
+#    ② 双端打包（leanback / mobile 并行，都依赖 ① 成功）
+#    ③ 归档 APK 为 Artifact，供直接下载安装
+# ============================================================================
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'android/**'
+      - '.github/workflows/build.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'android/**'
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: '跳过单元测试（仅用于快速验证打包链路）'
+        required: false
+        default: false
+        type: boolean
+
+# 同一个分支连续 push 时，取消上一次未跑完的构建，避免排队堆积
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_VERSION: '8.7'
+  JAVA_VERSION: '17'
+  WORKING_DIR: 'android'
+
+jobs:
+
+  # --------------------------------------------------------------------------
+  # ① 单元测试：任何打包之前的质量闸门
+  # --------------------------------------------------------------------------
+  unit-test:
+    name: ① 单元测试
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      # setup-gradle 会接管 ~/.gradle 的缓存与并发控制，
+      # 后续所有 gradlew 调用自动复用这份缓存（首次冷启动约 3~5 分钟，之后约 40 秒）
+      - name: 配置 Gradle 与依赖缓存
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+          cache-read-only: false
+
+      - name: 配置 Android SDK
+        uses: android-actions/setup-android@v3
+
+      # ⚠️ 仓库里没有 gradle-wrapper.jar（二进制文件未入库），
+      # 这里按需生成一次，否则 ./gradlew 会直接报 "No such file or directory"
+      - name: 准备 Gradle Wrapper
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          if [ ! -f "./gradlew" ]; then
+            echo "未找到 gradlew，正在生成…"
+            gradle wrapper --gradle-version "${GRADLE_VERSION}" --distribution-type bin
+          fi
+          chmod +x ./gradlew
+
+      - name: 运行纯 JVM 单元测试
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.skip_tests != true }}
+        working-directory: ${{ env.WORKING_DIR }}
+        run: ./gradlew :core-source:testDebugUnitTest --stacktrace --no-daemon
+
+      - name: 归档测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: android/core-source/build/reports/tests/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # --------------------------------------------------------------------------
+  # ② 电视版打包
+  # --------------------------------------------------------------------------
+  build-leanback:
+    name: ② 打包 · 电视版
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: 配置 Gradle 与依赖缓存
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+          cache-read-only: false
+
+      - name: 配置 Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 准备 Gradle Wrapper
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          if [ ! -f "./gradlew" ]; then
+            gradle wrapper --gradle-version "${GRADLE_VERSION}" --distribution-type bin
+          fi
+          chmod +x ./gradlew
+
+      - name: 打包电视版 Release
+        working-directory: ${{ env.WORKING_DIR }}
+        run: ./gradlew :app:assembleLeanbackRelease --stacktrace --no-daemon
+
+      # 产物重命名成可读名字：默认名是 app-leanback-release.apk，
+      # 下载下来三个文件长得一模一样，用户分不清哪个是电视版
+      - name: 整理产物
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          mkdir -p dist
+          shopt -s nullglob
+          for f in app/build/outputs/apk/leanback/release/*.apk; do
+            cp "$f" "dist/DoubleScreen-TV-${GITHUB_SHA::7}.apk"
+          done
+          ls -lh dist/
+
+      - name: 归档电视版 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-leanback-tv
+          path: android/dist/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  # --------------------------------------------------------------------------
+  # ③ 手机版打包（与电视版并行执行）
+  # --------------------------------------------------------------------------
+  build-mobile:
+    name: ③ 打包 · 手机版
+    needs: unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: 配置 Gradle 与依赖缓存
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+          cache-read-only: false
+
+      - name: 配置 Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 准备 Gradle Wrapper
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          if [ ! -f "./gradlew" ]; then
+            gradle wrapper --gradle-version "${GRADLE_VERSION}" --distribution-type bin
+          fi
+          chmod +x ./gradlew
+
+      - name: 打包手机版 Release
+        working-directory: ${{ env.WORKING_DIR }}
+        run: ./gradlew :app:assembleMobileRelease --stacktrace --no-daemon
+
+      - name: 整理产物
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          mkdir -p dist
+          shopt -s nullglob
+          for f in app/build/outputs/apk/mobile/release/*.apk; do
+            cp "$f" "dist/DoubleScreen-Phone-${GITHUB_SHA::7}.apk"
+          done
+          ls -lh dist/
+
+      - name: 归档手机版 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-mobile-phone
+          path: android/dist/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  # --------------------------------------------------------------------------
+  # ④ 结果汇总
+  # --------------------------------------------------------------------------
+  summary:
+    name: ④ 构建汇总
+    needs: [ unit-test, build-leanback, build-mobile ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: 输出汇总
+        run: |
+          {
+            echo "## 构建结果"
+            echo ""
+            echo "| 阶段 | 状态 |"
+            echo "|---|---|"
+            echo "| 单元测试 | ${{ needs.unit-test.result }} |"
+            echo "| 电视版 APK | ${{ needs.build-leanback.result }} |"
+            echo "| 手机版 APK | ${{ needs.build-mobile.result }} |"
+            echo ""
+            echo "### 下载方式"
+            echo ""
+            echo "回到本仓库页面 → 右侧 **Releases** 旁边的 **Actions** 标签 → 点进本次运行 →"
+            echo "页面底部 **Artifacts** 区域，点击 \`apk-leanback-tv\` 或 \`apk-mobile-phone\` 下载。"
+            echo ""
+            echo "> APK 是 zip 打包的，下载后若为 .zip 请解压取出其中的 .apk 文件。"
+          } >> "$GITHUB_STEP_SUMMARY"

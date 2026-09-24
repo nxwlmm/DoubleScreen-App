@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 手机端尺寸覆盖。资源合并时 flavor 优先于 main。 -->
+<resources>
+
+    <dimen name="mobile_screen_padding_h">16dp</dimen>
+    <dimen name="mobile_card_padding">15dp</dimen>
+    <!-- 左滑露出的操作区总宽：3 × 50dp + 2 × 3dp 间隙 -->
+    <dimen name="mobile_swipe_reveal">156dp</dimen>
+    <dimen name="mobile_swipe_action_width">50dp</dimen>
+    <dimen name="mobile_swipe_gap">3dp</dimen>
+
+    <!-- 触控目标下限 48dp，低于这个值 Android 无障碍规范会告警 -->
+    <dimen name="mobile_touch_target">48dp</dimen>
+    <dimen name="mobile_top_bar_height">54dp</dimen>
+    <dimen name="mobile_tile_size">44dp</dimen>
+
+    <dimen name="text_page_title">24sp</dimen>
+    <dimen name="text_card_title">14.5sp</dimen>
+
+</resources>

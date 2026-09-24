@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <!--
+      形态特性由 flavor 用 manifestPlaceholders 注入：
+      电视版 required=true 且 touchscreen=false，手机版反之。
+      不加这两行的话，电视版会被手机应用市场当成普通 App 收录。
+    -->
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="${usesTouchscreen}" />
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="${usesLeanback}" />
+
+    <application
+        android:name=".App"
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.DoubleScreen"
+        android:usesCleartextTraffic="true">
+        <!--
+          ⚠️ usesCleartextTraffic 必须为 true。
+          API 28+ 默认禁止明文 HTTP，而大量第三方源配置就是 http:// 的，
+          不开这个开关会在 OkHttp 层直接抛 CleartextNotPermittedException，
+          表现为"所有源都失效"，且报错信息毫无提示性。
+        -->
+    </application>
+
+</manifest>

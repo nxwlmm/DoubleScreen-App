@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">影视</string>
+
+    <!-- 页面 -->
+    <string name="source_config_title">源配置管理</string>
+    <string name="tab_home">首页</string>
+    <string name="tab_movie">影片</string>
+    <string name="tab_live">直播</string>
+    <string name="tab_favorite">收藏</string>
+    <string name="tab_settings">设置</string>
+    <string name="nav_back">‹  设置</string>
+
+    <!-- 无痕 -->
+    <string name="incognito_short">无痕</string>
+    <string name="incognito_standard_mode">标准模式</string>
+    <string name="incognito_active">无痕播放中</string>
+
+    <!-- 操作 -->
+    <string name="action_use">设为当前</string>
+    <string name="action_update">检测更新</string>
+    <string name="action_delete">删除</string>
+    <string name="action_add">新增配置</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_close">关闭</string>
+    <string name="action_confirm_delete">确认删除</string>
+    <string name="action_enable">启用</string>
+    <string name="action_disable">停用</string>
+    <string name="action_undo">撤销</string>
+    <string name="action_pull">恢复到本机</string>
+
+    <!-- 状态 -->
+    <string name="status_available">可用</string>
+    <string name="status_failed">失效</string>
+    <string name="status_checking">校验中</string>
+    <string name="status_disabled">已停用</string>
+    <string name="status_current">当前</string>
+    <string name="ping_timeout">超时</string>
+    <string name="ping_unknown">—</string>
+    <string name="ping_checking">…</string>
+
+    <!-- 空状态 -->
+    <string name="empty_title">还没有源配置</string>
+    <string name="empty_hint_tv">按 OK 打开局域网投源面板，手机扫码即可推送\n电视端不需要遥控器打字</string>
+    <string name="empty_hint_mobile">点右上角 + 或下方按钮粘贴配置链接\n应用不内置任何影片源</string>
+    <string name="empty_add_first">添加第一个配置</string>
+
+    <!-- 电视端专有文案 -->
+    <string name="tv_hint">OK 设为当前 · ↓ 操作条 · ←→ 翻看 · 菜单键呼出操作面板 · 「新增配置」走局域网投源</string>
+    <string name="tv_action_hint">↑ 返回卡片</string>
+    <string name="tv_action_target">对「%1$s」</string>
+    <string name="tv_action_target_none">尚无配置 · OK 添加</string>
+    <string name="toast_switched_to">已切换到：%1$s</string>
+
+    <!-- 手机端专有文案 -->
+    <string name="mobile_tip">应用不内置任何影片源。粘贴你自己的配置链接即可添加；左滑卡片快捷操作，单点卡片快速切换。</string>
+    <string name="mobile_tip_incognito">无痕模式已开启：播放历史、搜索记录与推荐画像都不会留在本机；源配置本身仍会保存。</string>
+    <string name="mobile_footer_hint">支持剪贴板自动填充 · 触控目标 ≥ 44px</string>
+    <string name="add_dialog_title">新增配置</string>
+    <string name="add_dialog_label_url">配置链接（单仓 JSON / 多仓 / M3U / TXT）</string>
+    <string name="add_dialog_url_hint">https://example.com/config.json</string>
+    <string name="add_dialog_label_name">备注名（可选）</string>
+    <string name="add_dialog_name_hint">例如：备用配置</string>
+    <string name="add_dialog_paste">从剪贴板粘贴</string>
+    <string name="add_dialog_kind">配置类型</string>
+    <string name="kind_single">单仓</string>
+    <string name="kind_multi">多仓</string>
+    <string name="kind_live">直播</string>
+    <string name="toast_pasted">已从剪贴板填入</string>
+    <string name="toast_clipboard_empty">剪贴板是空的</string>
+    <string name="toast_url_invalid">链接需以 http:// 或 https:// 开头</string>
+    <string name="quick_panel_title">对「%1$s」的操作</string>
+    <string name="quick_panel_hint">选择后立即执行 · 返回键关闭</string>
+
+    <!-- 计数与页码 -->
+    <string name="count_configs">%1$d 个配置</string>
+    <string name="count_configs_none">暂无配置 · 点击下方按钮开始</string>
+    <string name="count_configs_swipe">%1$d 个配置 · 左滑卡片可快捷操作</string>
+    <string name="position_label">%1$d / %2$d</string>
+
+    <!-- 局域网投源面板 -->
+    <string name="cast_title">局域网极速投源</string>
+    <string name="cast_badge">TV 端无文本输入</string>
+    <string name="cast_service_running">推送服务运行中 · 端口 %1$d</string>
+    <string name="cast_service_stopped">推送服务未启动</string>
+    <string name="cast_started">局域网推送服务已启动</string>
+    <string name="cast_hint">请在同一 WiFi 下用手机 / 电脑浏览器访问：</string>
+    <string name="cast_step_1">手机连接与本机相同的 WiFi</string>
+    <string name="cast_step_2">用手机扫码，或手动输入上面的地址</string>
+    <string name="cast_step_3">粘贴配置链接并提交，本机自动接收并校验</string>
+    <string name="cast_qr_caption">用手机相机或浏览器扫码打开投源页</string>
+    <string name="cast_no_input_note">电视端不提供文本输入 · 一条链接也不用遥控器敲</string>
+    <string name="cast_url_pending">正在启动投源服务…</string>
+    <string name="cast_url_unavailable">未能获取局域网地址，请检查网络连接</string>
+    <string name="cast_refresh_url">刷新地址</string>
+
+    <!-- 提示 -->
+    <string name="toast_measuring">正在测速…</string>
+    <string name="toast_copy_url">投源地址已复制</string>
+    <string name="toast_no_source">还没有可用的配置</string>
+    <string name="toast_incognito_local">无痕模式仅保存在本机，退出后将丢弃</string>
+
+    <!-- 删除确认 -->
+    <string name="delete_confirm_message">确定删除「%1$s」吗？\n删除后需重新添加链接才能使用。</string>
+
+    <!-- 无障碍 -->
+    <string name="a11y_card">源配置卡片：%1$s</string>
+    <string name="a11y_incognito_toggle">切换无痕模式</string>
+    <string name="a11y_qr_code">局域网投源二维码</string>
+
+</resources>

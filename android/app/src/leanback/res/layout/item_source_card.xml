@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  电视端源配置卡片。
+  外层 padding = tv_card_glow_padding：为焦点态的放大与辉光预留空间，
+  否则 1.04 倍缩放会让卡片边缘被 RecyclerView 裁掉。
+  descendantFocusability=blocksDescendants：焦点必须落在卡片本身，
+  内部子 View 不能抢焦点（否则方向键会在卡片内部"卡住"）。
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="@dimen/tv_card_width"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:clickable="true"
+    android:descendantFocusability="blocksDescendants"
+    android:focusable="true"
+    android:orientation="vertical"
+    android:padding="@dimen/tv_card_glow_padding"
+    tools:ignore="UnusedAttribute">
+
+    <LinearLayout
+        android:id="@+id/card_body"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/tv_card_height"
+        android:orientation="vertical"
+        android:padding="@dimen/card_inner_padding">
+
+        <!-- 第一行：类型图标 · 延迟标签 · 状态胶囊 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:id="@+id/tile"
+                android:layout_width="@dimen/tv_tile_size"
+                android:layout_height="@dimen/tv_tile_size">
+
+                <ImageView
+                    android:id="@+id/tile_icon"
+                    android:layout_width="21dp"
+                    android:layout_height="21dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null" />
+            </FrameLayout>
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/ping_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:fontFamily="monospace"
+                android:includeFontPadding="false"
+                android:paddingStart="9dp"
+                android:paddingTop="3dp"
+                android:paddingEnd="9dp"
+                android:paddingBottom="3dp"
+                android:textSize="@dimen/text_mono"
+                tools:text="38ms" />
+
+            <TextView
+                android:id="@+id/status_pill"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:fontFamily="monospace"
+                android:includeFontPadding="false"
+                android:paddingStart="10dp"
+                android:paddingTop="3dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="3dp"
+                android:textSize="@dimen/text_mono"
+                tools:text="可用" />
+        </LinearLayout>
+
+        <!-- 名称 + 当前标记 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_md"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/name_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_main"
+                android:textSize="@dimen/text_card_title"
+                android:textStyle="bold"
+                tools:text="我的直播源" />
+
+            <TextView
+                android:id="@+id/current_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:fontFamily="monospace"
+                android:includeFontPadding="false"
+                android:paddingStart="7dp"
+                android:paddingTop="2dp"
+                android:paddingEnd="7dp"
+                android:paddingBottom="2dp"
+                android:text="@string/status_current"
+                android:textSize="9.5sp"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/url_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dp"
+            android:ellipsize="middle"
+            android:fontFamily="monospace"
+            android:maxLines="1"
+            android:textColor="@color/text_dim"
+            android:textSize="@dimen/text_mono"
+            tools:text="https://example.com/live.m3u" />
+
+        <Space
+            android:layout_width="1dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- 底部：类型 · 更新时间 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/kind_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.06"
+                android:textColor="@color/text_sub"
+                android:textSize="@dimen/text_mono"
+                tools:text="直播" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/updated_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:textColor="@color/text_dim"
+                android:textSize="@dimen/text_mono"
+                tools:text="今天 12:30" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

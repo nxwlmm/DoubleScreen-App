@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TV 端尺寸覆盖。
+  资源合并规则是 flavor 优先于 main，因此这里只写需要变大的项，
+  其余沿用 main/values/dimens.xml。
+-->
+<resources>
+
+    <!-- 卡片：248dp 与原型一致，三张正好铺满 798px 的安全区 -->
+    <dimen name="tv_card_width">248dp</dimen>
+    <dimen name="tv_card_height">172dp</dimen>
+    <dimen name="tv_card_gap">16dp</dimen>
+
+    <!-- 容纳焦点辉光：卡片放大 1.04 后左右各外扩约 5px，
+         这层留白保证辉光与缩放不会被父容器裁掉 -->
+    <dimen name="tv_card_glow_padding">4dp</dimen>
+
+    <dimen name="tv_screen_padding_h">30dp</dimen>
+    <dimen name="tv_screen_padding_v">26dp</dimen>
+    <dimen name="tv_top_bar_height">56dp</dimen>
+    <dimen name="tv_action_bar_height">52dp</dimen>
+    <dimen name="tv_tile_size">44dp</dimen>
+    <dimen name="tv_cast_panel_width">764dp</dimen>
+    <dimen name="tv_qr_size">232dp</dimen>
+
+    <dimen name="text_page_title">21sp</dimen>
+    <dimen name="text_card_title">16sp</dimen>
+    <dimen name="text_mono">10.5sp</dimen>
+
+</resources>

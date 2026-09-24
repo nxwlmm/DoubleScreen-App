@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 左滑操作 · 检测更新（轴色，这里用标准轴青；无痕下的着色在代码里处理） -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="12dp" />
+    <solid android:color="#1F4FACFE" />
+</shape>
