@@ -253,7 +253,10 @@ object SourceProbe {
     private fun readStoreHouse(jr: JsonReader, limit: Int): Pair<List<String>, String?> {
         if (jr.peek() != JsonToken.BEGIN_ARRAY) {
             jr.skipValue()
-            return emptyList() to null
+            // 必须显式写 <String>：`emptyList() to null` 里的 to 是泛型中缀函数，
+            // Kotlin 不会把外层声明的 Pair<List<String>, String?> 反向传播进 emptyList()，
+            // 于是报 "信息不足以推断类型变量 T"
+            return emptyList<String>() to null
         }
         val urls = ArrayList<String>(minOf(limit, 8))
         var firstName: String? = null
@@ -339,7 +342,9 @@ object SourceProbe {
             lines == 0 -> ParseResult.Invalid(FailReason.Empty("直播表为空"))
             channelCount == 0 -> ParseResult.Invalid(FailReason.Schema("未找到任何频道行"))
             !hasHttpUrl -> ParseResult.Invalid(FailReason.Schema("未找到 http(s) 播放地址"))
-            else -> ParseResult.Ok(kind = SourceKind.LIVE, itemCount = channelCount)
+            // 直播源没有 Spider 实现，spider 显式传 null ——
+            // ParseResult.Ok 的 spider 参数没有默认值，漏传即编译失败
+            else -> ParseResult.Ok(kind = SourceKind.LIVE, itemCount = channelCount, spider = null)
         }
     }
 
@@ -405,7 +410,8 @@ internal class LimitedInputStream(
 
     override fun read(b: ByteArray, off: Int, len: Int): Int {
         val n = delegate.read(b, off, len)
-        if (n > 0) checkLimit(n.toLong())
+        // checkLimit 的形参是 Int，这里不能传 n.toLong()
+        if (n > 0) checkLimit(n)
         return n
     }
 

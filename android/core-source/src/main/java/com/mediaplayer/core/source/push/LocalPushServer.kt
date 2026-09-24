@@ -311,7 +311,8 @@ class LocalPushServer(
         }
 
         Log.i(TAG, "pushed from $clientIp: kind=${pushed.kind} url=${pushed.url.take(64)}")
-        return json(200, "推送成功")
+        // json(code, message, status) 三个参数都必填，漏 status 即编译失败
+        return json(200, "推送成功", Response.Status.OK)
     }
 
     // ------------------------------------------------------------------ 响应构造

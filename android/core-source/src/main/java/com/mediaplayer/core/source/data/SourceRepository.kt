@@ -101,6 +101,9 @@ class SourceRepository(
         memory = persisted
         memoryActiveId = persistedActiveId
         emit()
+        // 表达式体函数必须返回 Snapshot：emit() 自身返回 Unit，
+        // 直接以它结尾会被推断成 Unit，与声明的返回类型冲突
+        _snapshot.value
     }
 
     /** 按 id 查找当前生效集里的条目。 */

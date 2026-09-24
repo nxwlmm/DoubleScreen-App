@@ -23,6 +23,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+// MutableStateFlow.update{} 是扩展函数，不在 MutableStateFlow 类上。
+// 漏掉这一行会让全部 11 处 probes.update{...} 报 "Unresolved reference: update"，
+// 并连带把 lambda 里的 it 也报成未解析（因为 lambda 的接收者类型推不出来）。
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
