@@ -201,14 +201,42 @@ class SourceViewModel(
         setIncognito(!repository.snapshot.value.incognito)
     }
 
-    /** 触发一次主源探测 + 自动故障轮换（对应原型的「检测更新」）。 */
+    /**
+     * 触发一次主源探测 + 自动故障轮换（对应原型的「检测更新」）。
+     *
+     * ⚠️ 与后台巡检的关键区别：这是**用户主动发起**的行为，因此允许把探测结果
+     * 落为当前源（含轮换后的新源）。
+     *
+     * [observeFailureSwitch] 的 Available 分支只在 `activeId == null` 时才补设当前源，
+     * 目的是"避免后台测速/巡检把用户手选的源悄悄换掉"。如果这里也跟着那个规则，
+     * 就会出现"点了检测更新、主源已失效并切到备用源，但当前源纹丝不动"的矛盾状态。
+     */
     fun checkActiveSource() {
         val candidates = repository.snapshot.value.entries.filter { it.enabled }
         if (candidates.isEmpty()) {
             scope.launch { _events.tryEmit(UiEvent.Toast("还没有可用的配置")) }
             return
         }
-        scope.launch { failover.resolve(SourcePool(candidates)) }
+        scope.launch {
+            val resolved = failover.resolve(SourcePool(candidates))
+            if (resolved != null) {
+                // ① 把本次探测中被淘汰的源标成失效。
+                //    引擎只在"全部失败"时发 SourceState.Failed，部分失败（主源挂了、
+                //    备用源顶上）不会发 —— 不在这里补标记的话，被淘汰的源会一直停在
+                //    ProbeState.Checking，卡片永远显示"校验中"。
+                if (resolved.failedBefore.isNotEmpty()) {
+                    probes.update { current ->
+                        var next = current
+                        resolved.failedBefore.forEach { attempt ->
+                            next = next + (attempt.entry.id to ProbeState.Failed)
+                        }
+                        next
+                    }
+                }
+                // ② 无条件落为当前源：这是用户主动检测的结果，不属于"后台静默改动"
+                repository.setActive(resolved.entry.id)
+            }
+        }
     }
 
     fun startPushServer() {
@@ -390,9 +418,20 @@ class SourceViewModel(
 
                     is SourceState.Switched -> {
                         val ping = state.pingMs.toInt()
-                        probes.update { it + (state.to.id to ProbeState.Ok(ping)) }
+                        // ⚠️ 必须同时更新两端：
+                        //  - to   → Ok（它就是新的可用源）
+                        //  - from → Failed（被淘汰的那个）
+                        // 早期版本只更新了 to，导致被淘汰的源一直停在 ProbeState.Checking，
+                        // 卡片永远显示"校验中"，看起来像卡死了。
+                        probes.update { current ->
+                            var next = current + (state.to.id to ProbeState.Ok(ping))
+                            state.from?.let { from -> next = next + (from.id to ProbeState.Failed) }
+                            next
+                        }
                         switchNotice.value = "主源不可用，已自动切换至「${state.to.name}」"
-                        repository.setActive(state.to.id)
+                        // 注意：这里**不**调用 repository.setActive ——
+                        // 「是否允许改动当前源」由发起方决定（checkActiveSource 负责落current，
+                        // 后台巡检则不落），见 checkActiveSource 的注释。
                     }
 
                     is SourceState.Failed -> {

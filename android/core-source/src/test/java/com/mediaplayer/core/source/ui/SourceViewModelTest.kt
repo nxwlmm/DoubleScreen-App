@@ -6,6 +6,8 @@ import com.mediaplayer.core.source.awaitCondition
 import com.mediaplayer.core.source.data.InMemoryStore
 import com.mediaplayer.core.source.data.SourceRepository
 import com.mediaplayer.core.source.model.SourceKind
+import com.mediaplayer.core.source.model.SourceState
+import com.mediaplayer.core.source.model.brief
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -132,9 +134,23 @@ class SourceViewModelTest {
         backend.on("primary.example.com", FakeBackend.Reply.Body(FakeBackend.SINGLE_OK))
         backend.on("backup.example.com", FakeBackend.Reply.Body(FakeBackend.SINGLE_OK))
 
-        val (vm, _, _) = buildViewModel()
+        val (vm, _, failover) = buildViewModel()
         bootstrapAndResolve(vm, expectedCount = 2)
-        awaitCondition(description = "首次应选中主源") {
+
+        // 先等引擎给出结论。这样超时消息能区分两件事：
+        //   a) 引擎压根没跑到终态 → 探测或候选集有问题
+        //   b) 引擎到终态了但 UI 没同步 → uiState 组装或订阅有问题
+        awaitCondition(
+            description = "failover 引擎应判定主源可用（引擎当前状态=${failover.state.value.brief}）"
+        ) {
+            failover.state.value is SourceState.Available ||
+                failover.state.value is SourceState.Switched
+        }
+
+        awaitCondition(
+            description = "首次应选中主源（activeId=${vm.uiState.value.currentActiveId}，" +
+                "configs=${vm.uiState.value.configs.size}，primaryId=${primary.id}）"
+        ) {
             vm.uiState.value.currentActiveId == primary.id
         }
 
@@ -176,9 +192,13 @@ class SourceViewModelTest {
         backend.on("p2.example.com", FakeBackend.Reply.Status(503))
         backend.on("b2.example.com", FakeBackend.Reply.Body(FakeBackend.SINGLE_OK))
 
-        val (vm, _, _) = buildViewModel()
+        val (vm, _, failover) = buildViewModel()
         bootstrapAndResolve(vm, expectedCount = 2)
-        awaitCondition(description = "5xx 应触发轮换到备用源") {
+
+        awaitCondition(
+            description = "5xx 应触发轮换到备用源（引擎当前状态=${failover.state.value.brief}，" +
+                "activeId=${vm.uiState.value.currentActiveId}，backupId=${backup.id}）"
+        ) {
             vm.uiState.value.currentActiveId == backup.id
         }
         assertEquals(SourceStatus.FAILED, vm.uiState.value.configs.first { it.id == primary.id }.status)

@@ -169,7 +169,16 @@ data class ResolvedSource(
     val entry: SourceEntry,
     val detail: ParseResult.Ok,
     /** 从发起请求到解析完成的总耗时，即 UI 上那个 "38ms" 的来源。 */
-    val pingMs: Long
+    val pingMs: Long,
+    /**
+     * 本次探测中，排在 [entry] 之前被判定失败的源。
+     *
+     * 为什么必须透出来：引擎内部本来就有这个 [SourceState.Failed.Attempt] 列表，
+     * 但只在"全部失败"时才通过 `SourceState.Failed` 暴露。于是"主源 503 失败、
+     * 备用源成功"这种**部分失败**的场景下，上层拿不到主源失败的事实，
+     * 它的卡片会一直停在 ProbeState.Checking（显示"校验中"），看起来像卡死了。
+     */
+    val failedBefore: List<SourceState.Failed.Attempt> = emptyList()
 )
 
 /**

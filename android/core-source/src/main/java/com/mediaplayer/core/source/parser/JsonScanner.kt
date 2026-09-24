@@ -232,7 +232,8 @@ internal class JsonScanner(private val src: String) {
         var depth = 0
         while (true) {
             skipWhitespace()
-            when (val c = peekOrNull()) {
+            // 这里只需要分类，不需要变量本身 —— 用 when 的 subject 直接匹配
+            when (peekOrNull()) {
                 null -> throw MalformedException("容器未闭合")
                 // 字符串必须整体消费：里面的括号不参与深度计算
                 '"' -> readRawString()

@@ -228,7 +228,14 @@ class AutoFailoverSourceManager(
                         _state.value = SourceState.Switched(previous, entry, lastReason, pingMs)
                     }
 
-                    val resolved = ResolvedSource(entry, outcome.detail, pingMs)
+                    val resolved = ResolvedSource(
+                        entry = entry,
+                        detail = outcome.detail,
+                        pingMs = pingMs,
+                        // 把本次探测中被淘汰的源一并带出去，让上层能把它们的卡片
+                        // 正确标记为失效（否则会一直停在"校验中"）
+                        failedBefore = tried.toList()
+                    )
                     lastResolved = resolved
                     _state.value = SourceState.Available(
                         entry = entry,
