@@ -393,10 +393,13 @@ class SourceViewModel(
     /**
      * 订阅主调度器的状态：把引擎事件翻译成 UI 语义。
      *
-     * - `Checking` → 对应卡片进入"校验中"
-     * - `Available` → 回填测速值；若此前无当前源则补设为当前
-     * - `Switched`  → 生成一次性提示文案，并把新源设为当前
-     * - `Failed`    → 把每一个尝试过的源都标成失效，便于用户看出是哪几条坏了
+     * 分两条通道订阅：
+     * - [AutoFailoverSourceManager.state]（StateFlow）→ 渲染"校验中 / 可用 / 全部失败"这类**持续状态**；
+     * - [AutoFailoverSourceManager.switchEvents]（SharedFlow）→ 接收**瞬时事件**。
+     *
+     * ⚠️ Switched 必须走事件流：引擎在发出 Switched 后会立刻把 state 覆盖成 Available，
+     * 而 StateFlow 是 conflate 的，只订阅 state 很可能直接跳过 Switched ——
+     * 表现就是"明明切换了，却弹不出提示"。
      */
     private fun observeFailureSwitch() {
         scope.launch {
@@ -410,28 +413,11 @@ class SourceViewModel(
                         val ping = state.pingMs.toInt()
                         probes.update { it + (state.entry.id to ProbeState.Ok(ping)) }
                         // 首次加载时 activeId 为空，补设为当前；已有当前源则不动，
-                        // 避免后台巡检把用户手选的源悄悄换掉
+                        // 避免后台巡检把用户手选的源悄悄换掉。
+                        // （用户主动检测的场景由 checkActiveSource 显式 setActive）
                         if (repository.snapshot.value.activeId == null) {
                             repository.setActive(state.entry.id)
                         }
-                    }
-
-                    is SourceState.Switched -> {
-                        val ping = state.pingMs.toInt()
-                        // ⚠️ 必须同时更新两端：
-                        //  - to   → Ok（它就是新的可用源）
-                        //  - from → Failed（被淘汰的那个）
-                        // 早期版本只更新了 to，导致被淘汰的源一直停在 ProbeState.Checking，
-                        // 卡片永远显示"校验中"，看起来像卡死了。
-                        probes.update { current ->
-                            var next = current + (state.to.id to ProbeState.Ok(ping))
-                            state.from?.let { from -> next = next + (from.id to ProbeState.Failed) }
-                            next
-                        }
-                        switchNotice.value = "主源不可用，已自动切换至「${state.to.name}」"
-                        // 注意：这里**不**调用 repository.setActive ——
-                        // 「是否允许改动当前源」由发起方决定（checkActiveSource 负责落current，
-                        // 后台巡检则不落），见 checkActiveSource 的注释。
                     }
 
                     is SourceState.Failed -> {
@@ -443,8 +429,22 @@ class SourceViewModel(
                         }
                     }
 
-                    SourceState.Idle -> Unit
+                    // Switched 是瞬时事件，统一由下面的 switchEvents 处理
+                    is SourceState.Switched, SourceState.Idle -> Unit
                 }
+            }
+        }
+
+        scope.launch {
+            failover.switchEvents.collect { switched ->
+                val ping = switched.pingMs.toInt()
+                // 同时更新两端：to → Ok，from → Failed（被淘汰的源不能一直停在"校验中"）
+                probes.update { current ->
+                    var next = current + (switched.to.id to ProbeState.Ok(ping))
+                    switched.from?.let { from -> next = next + (from.id to ProbeState.Failed) }
+                    next
+                }
+                switchNotice.value = "主源不可用，已自动切换至「${switched.to.name}」"
             }
         }
     }

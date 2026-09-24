@@ -17,8 +17,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -113,6 +116,32 @@ class AutoFailoverSourceManager(
 
     private val _state = MutableStateFlow<SourceState>(SourceState.Idle)
     val state: StateFlow<SourceState> = _state.asStateFlow()
+
+    /**
+     * 故障转移**一次性事件**流。
+     *
+     * ## 为什么不能只靠 [state]
+     * 发生切换时，引擎会连续同步执行两行赋值：
+     * ```
+     * _state.value = SourceState.Switched(...)
+     * _state.value = SourceState.Available(...)   // 紧接着
+     * ```
+     * 而 `StateFlow` 的反压策略是 **conflate**（只保留最新值）——
+     * 消费者很可能**直接跳过 Switched，只收到 Available**，
+     * 于是"已自动切换至 X"这类提示会莫名其妙丢失（测试里表现为
+     * `assertNotNull(lastSwitchedNotice)` 失败）。
+     *
+     * `Switched` 语义上是**事件**而非状态，所以额外走一条 SharedFlow。
+     * 两条通道都保留：`state` 供 UI 渲染当前态，`switchEvents` 保证事件不丢。
+     *
+     * 注意：SharedFlow 在**没有任何订阅者**时 `tryEmit` 会丢弃事件 ——
+     * 因此订阅方（ViewModel）必须在调用 `resolve()` 之前完成订阅。
+     */
+    private val _switchEvents = MutableSharedFlow<SourceState.Switched>(
+        replay = 0,
+        extraBufferCapacity = 4
+    )
+    val switchEvents: SharedFlow<SourceState.Switched> = _switchEvents.asSharedFlow()
 
     private val mutex = Mutex()
 
@@ -225,7 +254,12 @@ class AutoFailoverSourceManager(
                     // 发生了实际切换才发 Switched；首次选定直接进 Available
                     if (previous != null && previous.id != entry.id && lastReason != null) {
                         Log.i(TAG, "switched: ${previous.name} -> ${entry.name} (${lastReason.message})")
-                        _state.value = SourceState.Switched(previous, entry, lastReason, pingMs)
+                        val switched = SourceState.Switched(previous, entry, lastReason, pingMs)
+                        _state.value = switched
+                        // 必须同时走事件流：紧接着下面就会把 state 赋成 Available，
+                        // 而 StateFlow 会 conflate 连续赋值 —— 只订阅 state 的消费者
+                        // 极可能跳过 Switched，导致切换提示丢失。
+                        _switchEvents.tryEmit(switched)
                     }
 
                     val resolved = ResolvedSource(

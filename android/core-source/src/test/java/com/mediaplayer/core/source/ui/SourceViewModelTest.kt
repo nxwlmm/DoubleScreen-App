@@ -162,6 +162,12 @@ class SourceViewModelTest {
             vm.uiState.value.currentActiveId == backup.id
         }
 
+        // 切换提示走独立的 SharedFlow 事件流，与 activeId 的写入是并发的，
+        // 这里等它一并到位再断言，避免读到中间态
+        awaitCondition(description = "切换应产生一次性提示") {
+            vm.uiState.value.lastSwitchedNotice != null
+        }
+
         val state = vm.uiState.value
         assertNotNull("切换应产生一次性提示", state.lastSwitchedNotice)
         assertTrue(
