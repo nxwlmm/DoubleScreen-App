@@ -1,7 +1,9 @@
 package com.mediaplayer.core.source.parser
 
-import android.util.JsonReader
-import android.util.JsonToken
+// 注意：这里**不再**引入 android.util.JsonReader / JsonToken。
+// 它们在 Android 单元测试里是 mockable 空壳（peek() 恒返回 null），
+// 会让每次源探测都被误判为"JSON 根节点不是对象"，进而使所有依赖测速的
+// 测试集体超时。JSON 解析已改为纯 Kotlin 的 [JsonScanner]。
 import com.mediaplayer.core.source.model.FailReason
 import com.mediaplayer.core.source.model.ParseResult
 import com.mediaplayer.core.source.model.SourceKind
@@ -91,9 +93,6 @@ object SourceProbe {
     /** 多仓最多取前 N 个子仓地址——UI 不会展示更多，没必要全读。 */
     const val MAX_CHILD_URLS = 64
 
-    /** 数组元素计数上限：超出后仍会完整 skip，但不再累加，防止计数器溢出与无谓开销。 */
-    private const val COUNT_LIMIT = 100_000
-
     /**
      * @param declaredKind 调用方声明的类型（用户在 UI 上选的），仅作兜底参考
      * @param contentType  HTTP `Content-Type`，用于识别 UTF-8/GBK 等编码
@@ -119,7 +118,10 @@ object SourceProbe {
                     ?: return ParseResult.Invalid(FailReason.Empty("响应体为空"))
 
                 when {
-                    first == '{' || first == '[' -> scanJson(reader)
+                    // JSON 需要先落成字符串再交给 JsonScanner 扫描。
+                    // 体积上限已在入口由 LimitedInputStream 卡住（≤4MB），
+                    // 这里最多多占一份 String 的内存，远小于全量对象树的开销。
+                    first == '{' || first == '[' -> scanJson(reader.readText())
                     first == '#' -> scanLive(reader)
                     // 首字符既不是 JSON 也不是 M3U 头：用「声明类型 + URL 后缀」共同判断。
                     // .txt 直播表常常没有 #EXTM3U 头，只靠声明类型容易漏判成 JSON。
@@ -127,7 +129,7 @@ object SourceProbe {
                         url.endsWith(".m3u", ignoreCase = true) ||
                         url.endsWith(".m3u8", ignoreCase = true) ||
                         url.endsWith(".txt", ignoreCase = true) -> scanLive(reader)
-                    else -> scanJson(reader)
+                    else -> scanJson(reader.readText())
                 }
             }
         } catch (e: SizeLimitExceededException) {
@@ -152,49 +154,41 @@ object SourceProbe {
      * - `urls`       Array  多仓写法之一：字符串数组
      * - `storeHouse` Array  多仓写法之二：对象数组，子项含 sourceUrl / sourceName
      */
-    private fun scanJson(reader: BufferedReader): ParseResult {
+    private fun scanJson(text: String): ParseResult {
         var siteCount = 0
         var liveCount = 0
         var spider: String? = null
         var childUrls: List<String> = emptyList()
         var declaredName: String? = null
 
-        JsonReader(reader).use { jr ->
-            // 少数源在 JSON 外层包了 BOM 或注释行，JsonReader 会自行跳过空白
-            if (jr.peek() != JsonToken.BEGIN_OBJECT) {
-                return ParseResult.Invalid(FailReason.Schema("JSON 根节点不是对象"))
-            }
-            jr.beginObject()
-            while (jr.hasNext()) {
-                when (jr.nextName()) {
-                    "sites" -> siteCount = countArrayElements(jr)
-                    "lives" -> liveCount = countArrayElements(jr)
+        val scanner = JsonScanner(text)
+        try {
+            scanner.scanTopLevelObject { name ->
+                when (name) {
+                    "sites" -> siteCount = scanner.countArrayElements()
+                    "lives" -> liveCount = scanner.countArrayElements()
 
-                    "spider" -> {
-                        if (jr.peek() == JsonToken.STRING) spider = jr.nextString() else jr.skipValue()
-                    }
+                    "spider" -> spider = scanner.readStringOrNull()
 
-                    "urls" -> childUrls = readStringArray(jr, MAX_CHILD_URLS)
+                    "urls" -> childUrls = scanner.readStringArray(MAX_CHILD_URLS)
 
                     "storeHouse" -> {
-                        val parsed = readStoreHouse(jr, MAX_CHILD_URLS)
+                        val parsed = scanner.readStoreHouse(MAX_CHILD_URLS)
                         childUrls = parsed.first
                         if (parsed.second != null) declaredName = parsed.second
                     }
 
                     // 仓名可能出现在不同层级，多取几个常见 key
                     "name", "sourceName" -> {
-                        if (jr.peek() == JsonToken.STRING) {
-                            if (declaredName == null) declaredName = jr.nextString()
-                        } else {
-                            jr.skipValue()
-                        }
+                        val value = scanner.readStringOrNull()
+                        if (declaredName == null && value != null) declaredName = value
                     }
 
-                    else -> jr.skipValue()
+                    else -> scanner.skipValue()
                 }
             }
-            jr.endObject()
+        } catch (e: JsonScanner.MalformedException) {
+            return ParseResult.Invalid(FailReason.Schema("JSON 解析失败：${e.message}"))
         }
 
         // 判定类型：出现子仓地址即视为多仓，否则按单仓处理（含纯 lives 的单仓）
@@ -210,94 +204,10 @@ object SourceProbe {
         )
     }
 
-    /** 只数元素个数，内容全部快速跳过。返回 0 表示不是数组或为空。 */
-    private fun countArrayElements(jr: JsonReader): Int {
-        if (jr.peek() != JsonToken.BEGIN_ARRAY) {
-            jr.skipValue()
-            return 0
-        }
-        var count = 0
-        jr.beginArray()
-        while (jr.hasNext()) {
-            jr.skipValue()
-            if (count < COUNT_LIMIT) count++
-        }
-        jr.endArray()
-        return count
-    }
-
-    /** 读字符串数组，最多取前 [limit] 个（其余仍完整跳过，保证流位置正确）。 */
-    private fun readStringArray(jr: JsonReader, limit: Int): List<String> {
-        if (jr.peek() != JsonToken.BEGIN_ARRAY) {
-            jr.skipValue()
-            return emptyList()
-        }
-        val out = ArrayList<String>(minOf(limit, 16))
-        jr.beginArray()
-        while (jr.hasNext()) {
-            if (jr.peek() == JsonToken.STRING) {
-                val value = jr.nextString()
-                if (out.size < limit && value.isNotBlank()) out.add(value.trim())
-            } else {
-                jr.skipValue()
-            }
-        }
-        jr.endArray()
-        return out
-    }
-
-    /**
-     * 解析 FongMi 风格的多仓索引：
-     * ```json
-     * { "storeHouse": [ { "sourceName": "仓A", "sourceUrl": "https://..." }, ... ] }
-     * ```
-     * 兼容两种降级写法：数组里直接放字符串、或子项用 `url` / `name` 作为 key。
-     *
-     * @return Pair(子仓地址列表, 第一个仓的展示名)
-     */
-    private fun readStoreHouse(jr: JsonReader, limit: Int): Pair<List<String>, String?> {
-        if (jr.peek() != JsonToken.BEGIN_ARRAY) {
-            jr.skipValue()
-            // 必须显式写 <String>：`emptyList() to null` 里的 to 是泛型中缀函数，
-            // Kotlin 不会把外层声明的 Pair<List<String>, String?> 反向传播进 emptyList()，
-            // 于是报 "信息不足以推断类型变量 T"
-            return emptyList<String>() to null
-        }
-        val urls = ArrayList<String>(minOf(limit, 8))
-        var firstName: String? = null
-
-        jr.beginArray()
-        while (jr.hasNext()) {
-            when (jr.peek()) {
-                JsonToken.STRING -> {
-                    val direct = jr.nextString().trim()
-                    if (direct.startsWith("http") && urls.size < limit) urls.add(direct)
-                }
-                JsonToken.BEGIN_OBJECT -> {
-                    var childUrl: String? = null
-                    var childName: String? = null
-                    jr.beginObject()
-                    while (jr.hasNext()) {
-                        when (jr.nextName()) {
-                            "sourceUrl", "url", "api" ->
-                                if (jr.peek() == JsonToken.STRING) childUrl = jr.nextString().trim() else jr.skipValue()
-                            "sourceName", "name" ->
-                                if (jr.peek() == JsonToken.STRING) childName = jr.nextString().trim() else jr.skipValue()
-                            else -> jr.skipValue()
-                        }
-                    }
-                    jr.endObject()
-                    if (!childUrl.isNullOrBlank() && childUrl.startsWith("http")) {
-                        if (urls.size < limit) urls.add(childUrl)
-                        if (firstName == null) firstName = childName
-                    }
-                }
-                else -> jr.skipValue()
-            }
-        }
-        jr.endArray()
-        return urls to firstName
-    }
+    // 说明：原先这里还有 countArrayElements / readStringArray / readStoreHouse
+    // 三个基于 android.util.JsonReader 的辅助方法，现已全部由 JsonScanner 承担。
+    // 移除它们的原因见 JsonScanner 的类注释：JsonReader 在单元测试里是空壳，
+    // 会导致所有源探测在测试环境下被误判为"结构不符"。
 
     // ---------------------------------------------------------------- 直播
 

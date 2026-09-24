@@ -206,7 +206,9 @@ class SourceRepository(
             if (reordered.none { it.id == entry.id }) reordered.add(entry)
         }
 
-        memory = normalize(reordered)
+        // 按调用方给定的顺序重排 —— 必须用 reindexInOrder 而不是 normalize，
+        // 否则条目会按它们**旧的** priority 被排回原位，重排等于没做。
+        memory = reindexInOrder(reordered)
         if (!incognito) persisted = memory
         persistLocked()
         emit()
@@ -219,13 +221,9 @@ class SourceRepository(
         if (memory.firstOrNull()?.id == id) return@withLock true // 已在首位
 
         val others = memory.filterNot { it.id == id }
-        // ⚠️ 这里不能调用 normalize()：它内部会 sortedBy { priority }，
-        // 而 target 的 priority 还是原值（比如 2），排序后会把它排回原位 ——
-        // 表现为"moveToTop 调用成功但顺序没变"。
-        // 必须按「target 在前」的既定顺序直接重排优先级。
-        memory = (listOf(target) + others).mapIndexed { index, entry ->
-            if (entry.priority == index) entry else entry.copy(priority = index)
-        }
+        // 同样必须用 reindexInOrder：target 的 priority 还是原值，
+        // 交给 normalize 会被 sortedBy 排回原位。
+        memory = reindexInOrder(listOf(target) + others)
         if (!incognito) persisted = memory
         persistLocked()
         emit()
@@ -304,10 +302,22 @@ class SourceRepository(
 
     // ------------------------------------------------------------------ 内部
 
-    /** 按优先级排序并把 priority 压缩成 0..n-1，避免删除多次后数值膨胀。 */
+    /** 按优先级排序并把 priority 压缩成 0..n-1。用于「顺序由 priority 决定」的场景。 */
     private fun normalize(list: List<SourceEntry>): List<SourceEntry> =
         list.sortedBy { it.priority }
             .mapIndexed { index, e -> if (e.priority == index) e else e.copy(priority = index) }
+
+    /**
+     * 按**传入顺序**重排优先级，不做排序。
+     *
+     * 与 [normalize] 的区别是关键：`normalize` 会 `sortedBy { priority }`，
+     * 因此只适用于"顺序本来就由 priority 决定"的场景（如从磁盘加载、删除后压缩）。
+     * 而 [reorder] / [moveToTop] 要求的是"按调用方给的顺序重排" ——
+     * 此时条目身上还挂着**旧的** priority，交给 normalize 会被排回原位，
+     * 表现为"调用成功但顺序没变"。
+     */
+    private fun reindexInOrder(list: List<SourceEntry>): List<SourceEntry> =
+        list.mapIndexed { index, e -> if (e.priority == index) e else e.copy(priority = index) }
 
     /**
      * 落盘闸门。
