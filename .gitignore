@@ -30,11 +30,16 @@ Thumbs.db
 release/
 outputs/
 
-# 签名文件：绝对不能入库
+# 签名文件：正式 keystore 绝对不能入库
 *.jks
 *.keystore
-!debug.keystore
 keystore.properties
+# ⚠️ 例外：调试密钥**必须入库**。
+#   它按 Android 官方立场无需保密（口令就是公开常量 android）；
+#   更重要的是必须**固定** —— 若改由 CI 每次现场生成，签名指纹每次都不同，
+#   后一次安装会因"签名不一致"被系统拒绝，无法覆盖升级。
+#   见 android/app/build.gradle.kts 的 signingConfigs。
+!debug.keystore
 
 # ------------------------------------------------------------
 # WorkBuddy 工作记忆：含项目决策过程与业务上下文，属内部资料，

@@ -209,6 +209,29 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
         run: ./gradlew :app:assembleLeanbackRelease --stacktrace --no-daemon
 
+      # 组装完立即校验签名：未签名的 APK 装不上（系统安装器报
+      # "解析软件包时出现问题 / packageInfo is null"），
+      # 而下一步的重命名会把 -unsigned 后缀抹掉，从产物名根本看不出来
+      - name: 校验电视版 APK 已签名
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          shopt -s nullglob
+          found=0
+          for f in app/build/outputs/apk/leanback/release/*.apk; do
+            found=1
+            case "$f" in
+              *unsigned*)
+                echo "::error::产出了未签名 APK：$f（检查 app/build.gradle.kts 的 signingConfig）"
+                exit 1
+                ;;
+              *) echo "✔ 已签名：$f" ;;
+            esac
+          done
+          if [ "$found" = "0" ]; then
+            echo "::error::未找到任何 APK 产物"
+            exit 1
+          fi
+
       # 产物重命名成可读名字：默认名是 app-leanback-release.apk，
       # 下载下来几个文件长得一模一样，用户分不清哪个是电视版
       - name: 整理产物
@@ -283,6 +306,26 @@ jobs:
       - name: 打包手机版 Release
         working-directory: ${{ env.WORKING_DIR }}
         run: ./gradlew :app:assembleMobileRelease --stacktrace --no-daemon
+
+      - name: 校验手机版 APK 已签名
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          shopt -s nullglob
+          found=0
+          for f in app/build/outputs/apk/mobile/release/*.apk; do
+            found=1
+            case "$f" in
+              *unsigned*)
+                echo "::error::产出了未签名 APK：$f（检查 app/build.gradle.kts 的 signingConfig）"
+                exit 1
+                ;;
+              *) echo "✔ 已签名：$f" ;;
+            esac
+          done
+          if [ "$found" = "0" ]; then
+            echo "::error::未找到任何 APK 产物"
+            exit 1
+          fi
 
       - name: 整理产物
         working-directory: ${{ env.WORKING_DIR }}

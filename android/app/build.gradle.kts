@@ -24,6 +24,30 @@ android {
      * `src/leanback` 只放遥控器焦点体系，`src/mobile` 只放触屏手势体系，
      * 两者都只依赖 `src/main` 的共用业务层，互不可见。
      */
+    /**
+     * Release 签名配置。
+     *
+     * ⚠️ 不配这一段，`assembleXxxRelease` 产出的是 **未签名** APK
+     * （文件名带 `-unsigned` 后缀，且**无法安装** —— 系统安装器会报
+     * "解析软件包时出现问题 / packageInfo is null"）。
+     *
+     * 这里用的是一份**固定提交进仓库**的调试密钥（PKCS12，密码 `android`）：
+     * - 调试密钥按 Android 官方立场无需保密，其口令本来就是公开常量；
+     * - 关键是**必须固定** —— 若改由 CI 每次现场生成，签名指纹每次都不同，
+     *   后一次安装会因为"签名不一致"而被系统拒绝，无法覆盖升级。
+     *
+     * 正式上架应用商店时，请替换成你自己的 keystore，
+     * 并把口令迁移到 `keystore.properties`（已加入 .gitignore）或 CI Secrets。
+     */
+    signingConfigs {
+        create("shared") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     flavorDimensions += "form"
     productFlavors {
         create("leanback") {
@@ -50,9 +74,13 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // 缺这一行会产出未签名 APK，装不上（见上面 signingConfigs 的说明）
+            signingConfig = signingConfigs.getByName("shared")
         }
         debug {
             isMinifyEnabled = false
+            // debug 也用同一份密钥：这样先装 release 再装 debug 不会因签名不同而被拒
+            signingConfig = signingConfigs.getByName("shared")
         }
     }
 
