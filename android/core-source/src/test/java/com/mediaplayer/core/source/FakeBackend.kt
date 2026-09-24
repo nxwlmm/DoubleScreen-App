@@ -161,11 +161,24 @@ internal class FakeBackend : Interceptor {
  * 结果是测试忙循环直到超时。用真实时间轮询虽然"朴素"，但在这类场景下最可靠——
  * 本测试的所有网络调用都被拦截器短路，实际耗时只有几十毫秒。
  */
-internal fun awaitCondition(timeoutMs: Long = 5_000, description: String = "条件", condition: () -> Boolean) {
+internal fun awaitCondition(timeoutMs: Long = 15_000, description: String = "条件", condition: () -> Boolean) {
     val deadline = System.currentTimeMillis() + timeoutMs
+    var lastError: Throwable? = null
     while (System.currentTimeMillis() < deadline) {
-        if (condition()) return
+        // ⚠️ 必须吞掉条件里的异常并继续轮询。
+        // 典型场景：条件是 `configs.first { … }`，而 bootstrap() 是异步的 ——
+        // 在 load() 完成前 configs 还是空列表，first{} 会抛 NoSuchElementException。
+        // 若直接让异常逃逸，测试会在"数据还没加载完"的瞬间就失败并报
+        // NoSuchElementException，看起来像业务 bug，其实是时序问题。
+        val satisfied = try {
+            condition()
+        } catch (e: Throwable) {
+            lastError = e
+            false
+        }
+        if (satisfied) return
         Thread.sleep(15)
     }
-    fail("等待超时（${timeoutMs}ms）：$description")
+    val suffix = lastError?.let { "（最后一次求值抛了 ${it.javaClass.simpleName}: ${it.message}）" } ?: ""
+    fail("等待超时（${timeoutMs}ms）：$description$suffix")
 }

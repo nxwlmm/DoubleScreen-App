@@ -109,12 +109,7 @@ class SourceViewModel(
     fun bootstrap() {
         scope.launch {
             repository.load()
-            val candidates = repository.snapshot.value.entries.filter { it.enabled }
-            if (candidates.isEmpty()) return@launch
-            // 全量测速（probeManager，不影响当前源选择）
             measureAllPings()
-            // 自动选定当前源（failover，触发状态机 → observeFailureSwitch 回填 activeId）
-            failover.resolve(SourcePool(candidates))
         }
     }
 

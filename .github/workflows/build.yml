@@ -119,6 +119,32 @@ jobs:
         working-directory: ${{ env.WORKING_DIR }}
         run: ./gradlew :core-source:testDebugUnitTest --stacktrace --no-daemon
 
+      # 测试失败时 Gradle 只在控制台打印一行 "XXX FAILED"，看不到具体断言差异。
+      # 这里直接把 JUnit XML 报告里的 <failure> 段落打出来，省掉下载 HTML 报告这一步。
+      - name: 打印测试失败详情
+        if: always()
+        working-directory: ${{ env.WORKING_DIR }}
+        run: |
+          REPORT_DIR="core-source/build/test-results/testDebugUnitTest"
+          if [ ! -d "$REPORT_DIR" ]; then
+            echo "未找到测试结果目录：$REPORT_DIR"
+            exit 0
+          fi
+          found=0
+          for f in "$REPORT_DIR"/*.xml; do
+            [ -e "$f" ] || continue
+            if grep -q "<failure" "$f"; then
+              found=1
+              echo ""
+              echo "================= 失败用例：$(basename "$f") ================="
+              # 输出 failure 标签前后各若干行，含断言 message 与堆栈首行
+              grep -A 30 "<failure" "$f" | head -70
+            fi
+          done
+          if [ "$found" = "0" ]; then
+            echo "✔ 全部单元测试通过，无失败详情"
+          fi
+
       - name: 归档测试报告
         if: always()
         uses: actions/upload-artifact@v4

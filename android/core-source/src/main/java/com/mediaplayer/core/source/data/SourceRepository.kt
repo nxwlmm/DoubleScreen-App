@@ -206,9 +206,7 @@ class SourceRepository(
             if (reordered.none { it.id == entry.id }) reordered.add(entry)
         }
 
-        // 按新顺序重新分配 priority，否则 normalize 会按旧 priority 排序把顺序还原
-        val reprioritized = reordered.mapIndexed { index, e -> e.copy(priority = index) }
-        memory = normalize(reprioritized)
+        memory = normalize(reordered)
         if (!incognito) persisted = memory
         persistLocked()
         emit()
@@ -221,7 +219,13 @@ class SourceRepository(
         if (memory.firstOrNull()?.id == id) return@withLock true // 已在首位
 
         val others = memory.filterNot { it.id == id }
-        memory = normalize(listOf(target) + others)
+        // ⚠️ 这里不能调用 normalize()：它内部会 sortedBy { priority }，
+        // 而 target 的 priority 还是原值（比如 2），排序后会把它排回原位 ——
+        // 表现为"moveToTop 调用成功但顺序没变"。
+        // 必须按「target 在前」的既定顺序直接重排优先级。
+        memory = (listOf(target) + others).mapIndexed { index, entry ->
+            if (entry.priority == index) entry else entry.copy(priority = index)
+        }
         if (!incognito) persisted = memory
         persistLocked()
         emit()

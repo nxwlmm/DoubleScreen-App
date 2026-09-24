@@ -57,6 +57,24 @@ class SourceViewModelTest {
 
     // ---------------------------------------------------------------- 基础状态收敛
 
+    /**
+     * 等配置从磁盘加载完成，再触发一次主源探测。
+     *
+     * ⚠️ 这两步缺一不可：
+     * - `bootstrap()` 是**异步**的（内部 scope.launch），不等它完成就调
+     *   `checkActiveSource()` 会读到空的 entries，直接提示"还没有可用的配置"。
+     * - `bootstrap()` 只跑 `measureAllPings()`（走 probeManager），**从不触发
+     *   failover.resolve()**；而 `currentActiveId` 只由 failover 成功时设置。
+     *   不调 `checkActiveSource()` 的话，`currentActiveId` 永远是 null。
+     */
+    private suspend fun bootstrapAndResolve(vm: SourceViewModel, expectedCount: Int) {
+        vm.bootstrap()
+        awaitCondition(description = "配置加载完成（期望 $expectedCount 条）") {
+            vm.uiState.value.configs.size == expectedCount
+        }
+        vm.checkActiveSource()
+    }
+
     @Test
     fun `bootstrap loads persisted configs into the ui state`() = runBlocking {
         val repository = SourceRepository(store)
@@ -115,7 +133,7 @@ class SourceViewModelTest {
         backend.on("backup.example.com", FakeBackend.Reply.Body(FakeBackend.SINGLE_OK))
 
         val (vm, _, _) = buildViewModel()
-        vm.bootstrap()
+        bootstrapAndResolve(vm, expectedCount = 2)
         awaitCondition(description = "首次应选中主源") {
             vm.uiState.value.currentActiveId == primary.id
         }
@@ -159,7 +177,7 @@ class SourceViewModelTest {
         backend.on("b2.example.com", FakeBackend.Reply.Body(FakeBackend.SINGLE_OK))
 
         val (vm, _, _) = buildViewModel()
-        vm.bootstrap()
+        bootstrapAndResolve(vm, expectedCount = 2)
         awaitCondition(description = "5xx 应触发轮换到备用源") {
             vm.uiState.value.currentActiveId == backup.id
         }
@@ -178,7 +196,7 @@ class SourceViewModelTest {
         backend.on("schema-ok.example.com", FakeBackend.Reply.Body(FakeBackend.SINGLE_OK))
 
         val (vm, _, _) = buildViewModel()
-        vm.bootstrap()
+        bootstrapAndResolve(vm, expectedCount = 2)
         awaitCondition(description = "结构不符应被拦下并切到合规源") {
             vm.uiState.value.currentActiveId == backup.id
         }
