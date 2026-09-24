@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 class LiveActivity : AppCompatActivity() {
 
     private val viewModel: LiveViewModel by lazy {
-        ViewModelProvider(this, LiveViewModel.factory(AppGraph.httpClient, AppGraph.sourceRepository))[LiveViewModel::class.java]
+        ViewModelProvider(this, LiveViewModel.factory(AppGraph.httpClient, AppGraph.repository))[LiveViewModel::class.java]
     }
 
     // 三个轻量 adapter 都内嵌在本文件里 —— 它们逻辑极薄，抽出去反而增加跳转成本

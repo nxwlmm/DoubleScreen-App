@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 class LiveTvActivity : AppCompatActivity() {
 
     private val viewModel: LiveViewModel by lazy {
-        ViewModelProvider(this, LiveViewModel.factory(AppGraph.httpClient, AppGraph.sourceRepository))[LiveViewModel::class.java]
+        ViewModelProvider(this, LiveViewModel.factory(AppGraph.httpClient, AppGraph.repository))[LiveViewModel::class.java]
     }
 
     private val sourceAdapter = TextAdapter { _, pos ->

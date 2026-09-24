@@ -33,8 +33,9 @@ object AppGraph {
     /**
      * 全 App 共享一个 OkHttpClient —— 连接池与后台线程都是有状态的，
      * 每处各建一个会让低配盒子多出数条常驻线程与若干空闲连接。
+     * 公开给直播播放器用（OkHttpDataSource 复用同一套网络栈）。
      */
-    private val httpClient: OkHttpClient by lazy { AutoFailoverSourceManager.createClient() }
+    val httpClient: OkHttpClient by lazy { AutoFailoverSourceManager.createClient() }
 
     val repository: SourceRepository by lazy {
         SourceRepository.create(File(appContext.filesDir, FILE_NAME))
