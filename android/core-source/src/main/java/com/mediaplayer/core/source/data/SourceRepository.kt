@@ -206,7 +206,9 @@ class SourceRepository(
             if (reordered.none { it.id == entry.id }) reordered.add(entry)
         }
 
-        memory = normalize(reordered)
+        // 按新顺序重新分配 priority，否则 normalize 会按旧 priority 排序把顺序还原
+        val reprioritized = reordered.mapIndexed { index, e -> e.copy(priority = index) }
+        memory = normalize(reprioritized)
         if (!incognito) persisted = memory
         persistLocked()
         emit()
