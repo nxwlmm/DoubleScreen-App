@@ -76,6 +76,26 @@ class SourceConfigActivity : AppCompatActivity() {
         binding.incognitoPill.setOnClickListener { viewModel.toggleIncognito() }
         binding.btnAddTop.setOnClickListener { showAddDialog() }
         binding.btnAddBottom.setOnClickListener { showAddDialog() }
+
+        // 直播入口：LiveActivity 会从配置库里筛出 LIVE 类型的源并解析频道
+        binding.btnLive.setOnClickListener { startActivity(Intent(this, LiveActivity::class.java)) }
+
+        // 一键复制全部源链接 —— 方便把同一批源粘贴到其他播放器（如 FongMi）
+        binding.btnCopyAll.setOnClickListener {
+            val entries = viewModel.uiState.value.configs
+            if (entries.isEmpty()) {
+                showNotice(getString(R.string.toast_copy_all_empty))
+                return@setOnClickListener
+            }
+            val text = entries.joinToString("\n") { entry ->
+                if (entry.name.isBlank()) entry.url else "${entry.url}   # ${entry.name}"
+            }
+            val manager = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            if (manager != null) {
+                manager.setPrimaryClip(ClipData.newPlainText("sources", text))
+                showNotice(getString(R.string.toast_copy_all, entries.size))
+            }
+        }
     }
 
     private fun setupList() {
@@ -155,6 +175,12 @@ class SourceConfigActivity : AppCompatActivity() {
         binding.btnAddTop.background =
             UiTheme.tileBackground(this, R.color.accent_standard, incognito)
         binding.btnAddTopIcon.imageTintList = ColorStateList.valueOf(accent)
+
+        // 直播入口：无痕下跟随紫色轴
+        binding.btnLive.setTextColor(
+            if (incognito) ContextCompat.getColor(this, R.color.accent_violet)
+            else ContextCompat.getColor(this, R.color.accent_mint)
+        )
 
         binding.btnAddBottom.background = UiTheme.ghostButtonBackground(this)
         binding.btnAddBottom.setTextColor(accent)

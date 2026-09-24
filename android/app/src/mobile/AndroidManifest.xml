@@ -21,6 +21,16 @@
             </intent-filter>
         </activity>
 
+        <!-- 直播：列表页 + 播放页。播放页锁定旋转由自身 configChanges 处理，
+             避免横竖屏切换时 ExoPlayer 重建产生黑屏 -->
+        <activity
+            android:name=".mobile.LiveActivity"
+            android:exported="false" />
+        <activity
+            android:name=".mobile.LivePlayerActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:supportsPictureInPicture="true" />
     </application>
 
 </manifest>

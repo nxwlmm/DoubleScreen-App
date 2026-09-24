@@ -113,5 +113,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel)
 
+    // Media3 / ExoPlayer：直播播放（HLS 原生支持；datasource-okhttp 复用全局网络栈）
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.exoplayer.hls)
+    implementation(libs.androidx.media3.datasource.okhttp)
+
     implementation(libs.zxing.core)              // 局域网投源面板的二维码
 }

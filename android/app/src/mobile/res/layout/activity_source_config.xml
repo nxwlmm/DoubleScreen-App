@@ -37,6 +37,19 @@
             android:layout_height="1dp"
             android:layout_weight="1" />
 
+        <!-- 直播入口：进入直播频道列表（列表内容来自配置库里 LIVE 类型的源） -->
+        <TextView
+            android:id="@+id/btn_live"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:fontFamily="monospace"
+            android:padding="10dp"
+            android:text="@string/live_entry"
+            android:textColor="@color/accent_mint"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
         <!-- 无痕开关胶囊（位于加号左侧） -->
         <LinearLayout
             android:id="@+id/incognito_pill"
@@ -198,17 +211,36 @@
     </FrameLayout>
 
     <!-- ================= 底部 ================= -->
-    <TextView
-        android:id="@+id/btn_add_bottom"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:layout_marginStart="@dimen/mobile_screen_padding_h"
-        android:layout_marginEnd="@dimen/mobile_screen_padding_h"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center"
-        android:text="@string/action_add"
-        android:textSize="13.5sp" />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/mobile_screen_padding_h"
+        android:paddingEnd="@dimen/mobile_screen_padding_h">
+
+        <TextView
+            android:id="@+id/btn_copy_all"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:gravity="center"
+            android:fontFamily="monospace"
+            android:text="@string/action_copy_all"
+            android:textColor="@color/text_dim"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/btn_add_bottom"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1.4"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="@string/action_add"
+            android:textSize="13.5sp" />
+    </LinearLayout>
 
     <TextView
         android:layout_width="match_parent"

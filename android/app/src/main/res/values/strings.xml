@@ -110,4 +110,20 @@
     <string name="a11y_incognito_toggle">切换无痕模式</string>
     <string name="a11y_qr_code">局域网投源二维码</string>
 
+    <!-- 直播 -->
+    <string name="live_title">直播</string>
+    <string name="live_refresh">刷新</string>
+    <string name="live_source_label">直播源</string>
+    <string name="live_group_label">分组</string>
+    <string name="live_loading">正在加载频道列表…</string>
+    <string name="live_empty">还没有可用的直播源\n请先在源配置里添加一条直播链接（.m3u / .txt）</string>
+    <string name="live_channel_count">共 %1$d 个频道</string>
+    <string name="live_prev">上一个</string>
+    <string name="live_next">下一个</string>
+    <string name="live_entry">直播</string>
+    <string name="live_entry_hint">%1$d 个直播源</string>
+    <string name="action_copy_all">复制全部链接</string>
+    <string name="toast_copy_all">已复制 %1$d 条源链接，可粘贴到其他播放器</string>
+    <string name="toast_copy_all_empty">还没有任何源可复制</string>
+
 </resources>
