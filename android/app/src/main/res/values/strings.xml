@@ -58,8 +58,8 @@
     <string name="mobile_tip_incognito">无痕模式已开启：播放历史、搜索记录与推荐画像都不会留在本机；源配置本身仍会保存。</string>
     <string name="mobile_footer_hint">支持剪贴板自动填充 · 触控目标 ≥ 44px</string>
     <string name="add_dialog_title">新增配置</string>
-    <string name="add_dialog_label_url">配置链接（单仓 JSON / 多仓 / M3U / TXT）</string>
-    <string name="add_dialog_url_hint">https://example.com/config.json</string>
+    <string name="add_dialog_label_url">配置链接（每行一个，可一次粘贴多条）</string>
+    <string name="add_dialog_url_hint">https://example.com/a.json\nhttps://example.com/b.json   # 备注名</string>
     <string name="add_dialog_label_name">备注名（可选）</string>
     <string name="add_dialog_name_hint">例如：备用配置</string>
     <string name="add_dialog_paste">从剪贴板粘贴</string>
@@ -69,7 +69,8 @@
     <string name="kind_live">直播</string>
     <string name="toast_pasted">已从剪贴板填入</string>
     <string name="toast_clipboard_empty">剪贴板是空的</string>
-    <string name="toast_url_invalid">链接需以 http:// 或 https:// 开头</string>
+    <string name="toast_url_invalid">没有找到合法的 http(s) 链接</string>
+    <string name="add_dialog_bulk_tip">可以一次粘贴多条：每行一个链接，行尾用「# 备注」加名称；整行以 # 开头会被当作注释忽略。</string>
     <string name="quick_panel_title">对「%1$s」的操作</string>
     <string name="quick_panel_hint">选择后立即执行 · 返回键关闭</string>
 

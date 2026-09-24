@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Build
 import com.mediaplayer.core.source.AutoFailoverSourceManager
 import com.mediaplayer.core.source.data.SourceRepository
-import com.mediaplayer.core.source.parser.StrictValidator
+import com.mediaplayer.core.source.parser.LenientValidator
 import com.mediaplayer.core.source.push.LocalPushServer
 import com.mediaplayer.core.source.ui.SourceViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -40,9 +40,17 @@ object AppGraph {
         SourceRepository.create(File(appContext.filesDir, FILE_NAME))
     }
 
-    /** 主调度器：其 state 会驱动"当前源"与自动切源提示。 */
+    /**
+     * 主调度器：其 state 会驱动"当前源"与自动切源提示。
+     *
+     * ⚠️ 这里用 [LenientValidator] 而不是严格策略。
+     * 严格策略要求单仓必须**同时**具备 `sites` 与 `spider`，但用户自行准备的绝大多数
+     * JSON 源是"纯点播源"（只有 sites，没有 spider），用严格策略会把它们全部判成失效 ——
+     * 表现为"明明有效却显示失效"。用户手动添加的场景应当宽松：
+     * 只要 sites 非空就收，具体某个站点能不能播由播放器运行时决定。
+     */
     val failover: AutoFailoverSourceManager by lazy {
-        AutoFailoverSourceManager(httpClient, appScope, StrictValidator)
+        AutoFailoverSourceManager(httpClient, appScope, LenientValidator)
     }
 
     /**
@@ -53,7 +61,7 @@ object AppGraph {
      * 这个 bug 表现得很像"偶发的自动切源"，事后极难定位。
      */
     val probeManager: AutoFailoverSourceManager by lazy {
-        AutoFailoverSourceManager(httpClient, appScope, StrictValidator)
+        AutoFailoverSourceManager(httpClient, appScope, LenientValidator)
     }
 
     /** 局域网投源服务。设备名取型号，让手机端能确认推给了哪台电视。 */

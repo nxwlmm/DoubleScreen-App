@@ -16,6 +16,10 @@
         android:textColor="@color/text_sub"
         android:textSize="12sp" />
 
+    <!--
+      支持一次粘贴多条：每行一个链接，行内可用「# 备注」补充名称。
+      imeOptions=flagNoEnterAction 让回车是换行而不是"完成"，否则多行粘贴会被截断。
+    -->
     <EditText
         android:id="@+id/input_url"
         android:layout_width="match_parent"
@@ -24,15 +28,18 @@
         android:autofillHints=""
         android:background="@drawable/bg_input"
         android:fontFamily="monospace"
+        android:gravity="top|start"
         android:hint="@string/add_dialog_url_hint"
         android:importantForAutofill="no"
-        android:inputType="textUri"
-        android:maxLines="3"
-        android:minHeight="76dp"
+        android:imeOptions="flagNoEnterAction"
+        android:inputType="textMultiLine"
+        android:minLines="5"
+        android:minHeight="136dp"
         android:padding="13dp"
+        android:scrollbars="vertical"
         android:textColor="@color/text_main"
         android:textColorHint="@color/text_dim"
-        android:textSize="13sp" />
+        android:textSize="12.5sp" />
 
     <TextView
         android:id="@+id/btn_paste"

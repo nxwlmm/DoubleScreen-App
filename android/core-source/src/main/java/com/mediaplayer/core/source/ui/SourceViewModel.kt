@@ -124,17 +124,103 @@ class SourceViewModel(
 
     // ------------------------------------------------------------------ 用户动作
 
-    /** 新增配置（来自手机端输入弹窗）。成功后立即测速。 */
+    /** 新增单条配置（来自手机端输入弹窗）。成功后立即测速。 */
     fun addConfig(url: String, kind: SourceKind = SourceKind.UNKNOWN, name: String? = null) {
+        addConfigs(url, forcedKind = kind, forcedName = name)
+    }
+
+    /**
+     * **批量新增**：把一段多行文本按行拆成多条源。
+     *
+     * 为什么需要它：对手上有几十条自备源的用户，逐条粘贴添加完全不可用。
+     * 支持的行格式（备注可选；`#` 前必须有空白，见下方说明）：
+     * ```
+     * https://example.com/a.json
+     * https://example.com/b.json      # 备注名
+     * https://example.com/c.json<Tab> # 用 Tab 分隔也可以
+     * ```
+     * 空行、以及以 `#` 开头的整行注释会被忽略 —— 所以可以直接把带注释的清单整段粘进来。
+     *
+     * ⚠️ 本方法只负责"把**用户自己提供**的一串链接解析入库"。
+     * App 不内置、也不附带任何预设清单；内容来源始终由使用者自行提供并担责。
+     *
+     * @param forcedKind 显式指定类型时对所有条目生效；UNKNOWN 表示按 URL 后缀推断
+     * @param forcedName 仅对单条输入有意义（多条时各自用行内备注）
+     */
+    fun addConfigs(
+        raw: String,
+        forcedKind: SourceKind = SourceKind.UNKNOWN,
+        forcedName: String? = null
+    ) {
         scope.launch {
-            val entry = repository.add(name.orEmpty(), url.trim(), kind)
-            if (entry == null) {
-                _events.tryEmit(UiEvent.Toast("该链接已存在或格式不合法"))
+            val parsed = parseBulkInput(raw)
+            if (parsed.isEmpty()) {
+                _events.tryEmit(UiEvent.Toast("没有识别到合法的 http(s) 链接"))
                 return@launch
             }
-            measurePing(entry.id)
-            _events.tryEmit(UiEvent.Toast("已添加，正在校验…"))
+
+            var added = 0
+            var skipped = 0
+            parsed.forEach { item ->
+                val kind = if (forcedKind != SourceKind.UNKNOWN) forcedKind
+                else SourceKind.from(null, item.url)
+                val name = if (parsed.size == 1) (forcedName ?: item.name) else item.name
+                if (repository.add(name.orEmpty(), item.url, kind) != null) added++ else skipped++
+            }
+
+            if (added == 0) {
+                _events.tryEmit(UiEvent.Toast(if (skipped > 0) "这些链接都已存在" else "添加失败"))
+                return@launch
+            }
+
+            _events.tryEmit(
+                UiEvent.Toast(
+                    buildString {
+                        append("已添加 $added 条")
+                        if (skipped > 0) append("，跳过重复 ${skipped} 条")
+                        append("，正在校验…")
+                    }
+                )
+            )
+            // 统一走批量测速（内部有 Semaphore 限流），而不是逐条 measurePing：
+            // 几十条同时探测会把低配盒子的并发连接打满
+            measureAllPings()
         }
+    }
+
+    /** 单行解析结果。 */
+    private data class BulkItem(val url: String, val name: String?)
+
+    /**
+     * 解析多行输入。
+     *
+     * ⚠️ `#` 只有**前面是空白**时才当备注分隔符 —— 否则会把 URL 自带的
+     * fragment（如 `config.json#section`）误切成两半。
+     */
+    private fun parseBulkInput(raw: String): List<BulkItem> {
+        val out = ArrayList<BulkItem>(16)
+        val seen = HashSet<String>(16)
+
+        raw.lineSequence().forEach { line ->
+            val trimmed = line.trim()
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) return@forEach
+
+            var cut = -1
+            for (i in trimmed.indices) {
+                if (trimmed[i] == '#' && i > 0 && trimmed[i - 1].isWhitespace()) {
+                    cut = i
+                    break
+                }
+            }
+            val urlPart = (if (cut >= 0) trimmed.substring(0, cut) else trimmed).trim()
+            val namePart = if (cut >= 0) trimmed.substring(cut + 1).trim() else ""
+
+            if (!urlPart.startsWith("http://") && !urlPart.startsWith("https://")) return@forEach
+            if (!seen.add(urlPart)) return@forEach   // 同一批里去重，避免重复提交同一条链接
+
+            out += BulkItem(urlPart, namePart.ifBlank { null })
+        }
+        return out
     }
 
     fun deleteConfig(id: String) {

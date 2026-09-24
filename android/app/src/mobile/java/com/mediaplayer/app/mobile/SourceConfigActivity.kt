@@ -183,12 +183,15 @@ class SourceConfigActivity : AppCompatActivity() {
             .setNegativeButton(R.string.action_cancel, null)
             .setPositiveButton(R.string.action_add) { _, _ ->
                 val url = dialogBinding.inputUrl.text?.toString().orEmpty().trim()
-                if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                // 支持一次粘贴多条，所以不能只校验开头 —— 用 contains 判断
+                // （粘贴的清单可能以标题/注释行开头）
+                if (!url.contains("http://") && !url.contains("https://")) {
                     showNotice(getString(R.string.toast_url_invalid))
                     return@setPositiveButton
                 }
                 val name = dialogBinding.inputName.text?.toString().orEmpty().trim()
-                viewModel.addConfig(url, pendingKind, name.ifBlank { null })
+                // addConfigs 会按行拆开：单行时 forcedName 生效，多行时各行用自己的备注
+                viewModel.addConfigs(url, pendingKind, name.ifBlank { null })
             }
             .create()
 
