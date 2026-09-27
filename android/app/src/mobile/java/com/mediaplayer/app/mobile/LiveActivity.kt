@@ -76,9 +76,14 @@ class LiveActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { state ->
-                    sourceAdapter.submit(state.sources.map { it.name.ifBlank { it.url } }, state.currentSourceId?.let { id ->
-                        state.sources.indexOfFirst { it.id == id }.takeIf { it >= 0 }
-                    })
+                    // ⚠️ takeIf 返回 Int?，而 submit 的 selectedPos 是 Int —— 必须用 ?: -1 兜底，
+                    // 否则报 "inferred type is Int? but Int was expected"
+                    sourceAdapter.submit(
+                        state.sources.map { it.name.ifBlank { it.url } },
+                        state.currentSourceId?.let { id ->
+                            state.sources.indexOfFirst { it.id == id }.takeIf { it >= 0 }
+                        } ?: -1
+                    )
                     groupAdapter.submit(
                         listOf(LiveViewModel.GROUP_ALL) + state.groups,
                         state.groups.indexOf(state.currentGroup).let { if (it >= 0) it + 1 else 0 }
@@ -139,7 +144,10 @@ class LiveActivity : AppCompatActivity() {
 
     /** 频道行适配器。 */
     private inner class ChannelAdapter(
-        private val onClick: (LiveChannel) -> Unit
+        // ⚠️ 必须是双参数：播放页要靠 position 定位「从第几个频道开始换台」，
+        // 调用处传的是 (channel, position)，签名落后一步就会报
+        // "inferred type is (LiveChannel, Any?) -> Unit but (LiveChannel) -> Unit was expected"
+        private val onClick: (LiveChannel, Int) -> Unit
     ) : RecyclerView.Adapter<ChannelAdapter.VH>() {
 
         private val items = ArrayList<LiveChannel>()
