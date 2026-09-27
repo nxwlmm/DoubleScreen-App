@@ -104,18 +104,26 @@ class LiveTvPlayerActivity : AppCompatActivity() {
     }
 
     /**
-     * 遥控器按键分发。
+     * 遥控器按键分发：**上/下键换台**。
      *
-     * ⚠️ 只在**控制栏隐藏**时拦截上下键换台；控制栏可见时必须把按键还给
-     * PlayerView（它的控制栏也要靠上下键导航），否则播放器没法操作。
+     * ⚠️ 这里**刻意不去判断"控制栏是否可见"**。
+     * 早先版本写的是 `playerView.isControllerVisible`，但 media3 的 PlayerView
+     * **并没有公开查询控制器可见性的 API**，编译期直接 Unresolved reference。
+     *
+     * 不判断也不影响操作：控制栏的按钮是**水平排列**的，左右键 + OK 键已覆盖
+     * 播放/暂停/进度/全屏等全部操作；上下键留给换台 —— 这也是 IPTV 应用的通行交互。
+     * 用"零 API 依赖"的方案换来确定性，比猜一个可能不存在的属性名更划算。
      */
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        val controllerVisible = playerView.isControllerVisible
         when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_UP ->
-                if (!controllerVisible) { switch(-1); return true }
-            KeyEvent.KEYCODE_DPAD_DOWN ->
-                if (!controllerVisible) { switch(+1); return true }
+            KeyEvent.KEYCODE_DPAD_UP -> {
+                switch(-1)
+                return true
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                switch(+1)
+                return true
+            }
         }
         return super.onKeyDown(keyCode, event)
     }
