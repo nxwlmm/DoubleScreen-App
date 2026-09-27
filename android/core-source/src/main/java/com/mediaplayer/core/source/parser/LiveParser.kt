@@ -56,7 +56,10 @@ object LiveParser {
         for (line in lines) {
             when {
                 line.startsWith("#EXTINF") -> {
-                    pendingGroup = GROUP_TITLE.find(line)?.groupValues?.takeIf { it.isNotBlank() }
+                    // ⚠️ groupValues 是 List<String>（第 0 项是整个匹配、第 1 项才是捕获组），
+                    // 必须取 [1]，不能直接当 String 用
+                    pendingGroup = GROUP_TITLE.find(line)?.groupValues?.getOrNull(1)
+                        ?.takeIf { it.isNotBlank() }
                     // 频道名 = 最后一个逗号之后的部分（属性里可能含逗号，所以取 lastIndexOf）
                     val comma = line.lastIndexOf(',')
                     pendingName = if (comma >= 0) line.substring(comma + 1).trim() else null

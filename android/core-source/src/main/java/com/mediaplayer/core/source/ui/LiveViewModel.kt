@@ -6,9 +6,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.mediaplayer.core.source.data.SourceRepository
 import com.mediaplayer.core.source.model.LiveChannel
+import com.mediaplayer.core.source.model.SourceEntry
 import com.mediaplayer.core.source.model.SourceKind
 import com.mediaplayer.core.source.parser.LiveParser
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,8 +54,7 @@ class LiveViewModel(
             get() = if (currentGroup == GROUP_ALL) channels else channels.filter { it.group == currentGroup }
     }
 
-    private val scope: kotlinx.coroutines.CoroutineScope =
-        scope ?: viewModelScope
+    private val scope: CoroutineScope = scope ?: viewModelScope
 
     private val _state = MutableStateFlow(LiveUiState())
     val state: StateFlow<LiveUiState> = _state.asStateFlow()
@@ -66,12 +67,19 @@ class LiveViewModel(
 
         /** 单个直播源的频道数上限：防畸形文件把内存打爆（几千个频道已是极限值）。 */
         private const val MAX_CHANNELS = 5_000
-        /** 下载超时：直播源文件通常很小，超时多半意味着地址已死。 */
-        private val HTTP_TIMEOUTS = OkHttpClient.Builder()
-            .connectTimeout(8, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .callTimeout(15, TimeUnit.SECONDS)
-            .build()
+
+        fun factory(httpClient: OkHttpClient, repository: SourceRepository): ViewModelProvider.Factory =
+            Factory(httpClient, repository)
+
+        /** 供工厂使用的私有实现 —— 必须与上面的 factory() 同处一个 companion object。 */
+        private class Factory(
+            private val httpClient: OkHttpClient,
+            private val repository: SourceRepository
+        ) : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                LiveViewModel(httpClient, repository) as T
+        }
     }
 
     init {
@@ -183,20 +191,4 @@ class LiveViewModel(
             emptyList()
         }
     }
-
-    private class Factory(
-        private val httpClient: OkHttpClient,
-        private val repository: SourceRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            LiveViewModel(httpClient, repository) as T
-    }
-
-    companion object {
-        fun factory(httpClient: OkHttpClient, repository: SourceRepository): ViewModelProvider.Factory =
-            Factory(httpClient, repository)
-    }
-
-    private val TAG = "LiveViewModel"
 }
